@@ -1,0 +1,176 @@
+.mission-list {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  color: #1f2937;
+}
+
+.mission-list__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.5rem;
+}
+
+.mission-list__header h1 {
+  font-size: 1.75rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.mission-list__empty,
+.mission-list__loading {
+  color: #6b7280;
+  padding: 2rem 0;
+}
+
+.mission-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.mission-table th,
+.mission-table td {
+  text-align: left;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #f0f1f3;
+  vertical-align: middle;
+}
+
+.mission-table th {
+  background: #f9fafb;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #6b7280;
+}
+
+.mission-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.mission-table__name {
+  font-weight: 600;
+}
+
+.mission-table__name-link {
+  color: #1f2937;
+  text-decoration: none;
+}
+
+.mission-table__name-link:hover {
+  color: #2563eb;
+  text-decoration: underline;
+}
+
+.mission-table__desc {
+  max-width: 280px;
+  color: #4b5563;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mission-table__actions-col {
+  width: 1%;
+  white-space: nowrap;
+}
+
+.mission-table__actions {
+  white-space: nowrap;
+  display: flex;
+  gap: 0.5rem;
+}
+
+/* Status badges */
+.badge {
+  display: inline-block;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  background: #e5e7eb;
+  color: #374151;
+}
+
+.badge--draft {
+  background: #e5e7eb;
+  color: #4b5563;
+}
+
+.badge--published {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.badge--bidding {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.badge--awarded {
+  background: #ede9fe;
+  color: #6d28d9;
+}
+
+.badge--in_progress {
+  background: #cffafe;
+  color: #0e7490;
+}
+
+.badge--completed {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.badge--cancelled {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+/* Buttons */
+.btn {
+  cursor: pointer;
+  font-size: 0.85rem;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  padding: 0.4rem 0.75rem;
+  background: none;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+}
+
+.btn--primary {
+  background: #2563eb;
+  color: #fff;
+  font-weight: 500;
+}
+
+.btn--primary:hover {
+  background: #1d4ed8;
+}
+
+.btn--link {
+  color: #2563eb;
+  padding: 0.4rem 0.4rem;
+}
+
+.btn--link:hover {
+  text-decoration: underline;
+}
+
+.btn--danger {
+  color: #b91c1c;
+  padding: 0.4rem 0.4rem;
+}
+
+.btn--danger:hover {
+  text-decoration: underline;
+}

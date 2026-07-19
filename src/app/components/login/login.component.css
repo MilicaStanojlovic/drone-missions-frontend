@@ -1,0 +1,198 @@
+/* Auth screens — visual language lifted from DroneMissions.dc.html:
+   Space Grotesk / IBM Plex Mono, #2f6bff primary, gridded + blue-glow
+   background from the landing, input/label styling from the mission editor. */
+:host {
+  display: block;
+  min-height: 100vh;
+  background:
+    radial-gradient(1100px 620px at 50% 18%, rgba(47, 107, 255, 0.10), transparent 68%),
+    linear-gradient(rgba(40, 70, 100, 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(40, 70, 100, 0.045) 1px, transparent 1px),
+    linear-gradient(180deg, #f2f5f9, #e9edf2);
+  background-size: auto, 28px 28px, 28px 28px, auto;
+  background-color: #eef1f5;
+  color: #1b2732;
+  font-family: 'Space Grotesk', system-ui, sans-serif;
+}
+
+.auth {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+}
+
+.auth__inner {
+  width: 100%;
+  max-width: 400px;
+}
+
+.auth__brand {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 11px;
+  margin-bottom: 22px;
+  text-decoration: none;
+}
+
+.auth__logo {
+  width: 18px;
+  height: 18px;
+  transform: rotate(45deg);
+  background: #2f6bff;
+  box-shadow: 0 6px 18px rgba(47, 107, 255, 0.4);
+}
+
+.auth__wordmark {
+  font-family: 'IBM Plex Mono', monospace;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  font-size: 14px;
+  color: #1b2732;
+}
+
+.auth__card {
+  background: #ffffff;
+  border: 1px solid #e5eaf0;
+  border-radius: 16px;
+  padding: 30px 28px 26px;
+  box-shadow: 0 1px 2px rgba(20, 35, 55, 0.04), 0 12px 34px rgba(20, 35, 55, 0.08);
+  animation: authin 0.25s ease;
+}
+
+@keyframes authin {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
+
+.auth__eyebrow {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  color: #2f6bff;
+  margin-bottom: 10px;
+}
+
+.auth__title {
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: #141e28;
+  margin: 0 0 6px;
+}
+
+.auth__sub {
+  font-size: 13.5px;
+  color: #5c6b7a;
+  line-height: 1.5;
+  margin: 0 0 22px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 16px;
+}
+
+.field__label {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #6b7c8d;
+  margin-bottom: 7px;
+}
+
+.field__input {
+  width: 100%;
+  background: #f7f9fb;
+  border: 1px solid #dbe2ea;
+  border-radius: 8px;
+  color: #1b2732;
+  font-size: 14px;
+  padding: 11px 12px;
+  outline: none;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.field__input::placeholder {
+  color: #9aa8b6;
+}
+
+.field__input:focus {
+  border-color: #2f6bff;
+  background: #ffffff;
+}
+
+.field__input--invalid,
+.field__input--invalid:focus {
+  border-color: #d98b83;
+}
+
+.field__error {
+  margin: 7px 0 0;
+  font-size: 12px;
+  color: #c0574d;
+}
+
+.auth__error {
+  background: #fdf3f2;
+  border: 1px solid #f0d5d3;
+  color: #c0574d;
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 13px;
+  margin-bottom: 18px;
+}
+
+.auth__note {
+  background: #edf7f1;
+  border: 1px solid #cfeadd;
+  color: #12885c;
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 13px;
+  margin-bottom: 18px;
+}
+
+.auth__submit {
+  width: 100%;
+  margin-top: 4px;
+  background: #2f6bff;
+  color: #ffffff;
+  border: none;
+  border-radius: 9px;
+  padding: 12px 18px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(47, 107, 255, 0.28);
+  transition: background 0.15s ease;
+}
+
+.auth__submit:hover:not(:disabled) {
+  background: #1e5ae6;
+}
+
+.auth__submit:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.auth__foot {
+  text-align: center;
+  font-size: 13px;
+  color: #5c6b7a;
+  margin: 20px 0 0;
+}
+
+.auth__foot a {
+  color: #2f6bff;
+  font-weight: 500;
+}
+
+.auth__foot a:hover {
+  color: #1e5ae6;
+}

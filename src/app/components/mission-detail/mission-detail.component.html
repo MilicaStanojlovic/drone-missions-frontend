@@ -1,0 +1,63 @@
+<section class="mission-detail">
+  <a routerLink="/" class="mission-detail__back">&larr; Back to missions</a>
+
+  @if (vm$ | async; as vm) {
+    @switch (vm.status) {
+      @case ('loading') {
+        <p class="mission-detail__state">Loading mission…</p>
+      }
+      @case ('error') {
+        <div class="mission-detail__state mission-detail__state--error">
+          <h1>Mission not found</h1>
+          <p>We couldn't load this mission. It may have been deleted.</p>
+        </div>
+      }
+      @case ('loaded') {
+        @if (vm.mission; as mission) {
+          <article class="card">
+            <header class="card__header">
+              <div class="card__title-group">
+                <h1 class="card__title">{{ mission.name }}</h1>
+                <span class="badge" [class]="'badge--' + mission.status.toLowerCase()">
+                  {{ statusLabels[mission.status] }}
+                </span>
+              </div>
+              <div class="card__actions">
+                <a [routerLink]="['/missions', mission.id, 'edit']" class="btn btn--secondary">Edit</a>
+                <button type="button" class="btn btn--danger-solid" (click)="deleteMission(mission)">Delete</button>
+              </div>
+            </header>
+
+            <div class="card__section">
+              <h2 class="card__section-title">Description</h2>
+              <p class="card__description">{{ mission.description }}</p>
+            </div>
+
+            <dl class="card__meta">
+              <div class="card__meta-item">
+                <dt>Mission ID</dt>
+                <dd>{{ mission.id }}</dd>
+              </div>
+              <div class="card__meta-item">
+                <dt>Start time</dt>
+                <dd>{{ mission.startTime ? (mission.startTime | date: 'medium') : '—' }}</dd>
+              </div>
+              <div class="card__meta-item">
+                <dt>End time</dt>
+                <dd>{{ mission.endTime ? (mission.endTime | date: 'medium') : '—' }}</dd>
+              </div>
+              <div class="card__meta-item">
+                <dt>Created</dt>
+                <dd>{{ mission.createdAt | date: 'medium' }}</dd>
+              </div>
+              <div class="card__meta-item">
+                <dt>Last updated</dt>
+                <dd>{{ mission.updatedAt | date: 'medium' }}</dd>
+              </div>
+            </dl>
+          </article>
+        }
+      }
+    }
+  }
+</section>

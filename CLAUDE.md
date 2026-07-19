@@ -1,0 +1,113 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## Project state
+
+Angular 19 application (Angular CLI 19.2.19) implementing the **Mission CRUD** feature (Milestone 0). Standalone components, no `NgModule`. The feature spans:
+
+- `src/app/models/mission.model.ts` — `Mission`, `MissionStatus`, `MISSION_STATUSES`, `MissionPayload`
+- `src/app/services/mission.service.ts` — HTTP CRUD against the backend
+- `src/app/components/mission-list/` — table with status badges + delete
+- `src/app/components/mission-detail/` — single-mission view
+- `src/app/components/mission-form/` — shared create/edit reactive form
+
+The Spring backend is expected at `http://localhost:8085`; the frontend fails gracefully (loading/error states) when it is down.
+
+## Commands
+
+```bash
+npm start            # ng serve — dev server at http://localhost:4200 (development config, no optimization, source maps)
+npm run build        # ng build — production build to dist/drone-missions-frontend
+npm run watch        # ng build --watch, development configuration
+npm test             # ng test — Karma + Jasmine, launches Chrome
+ng test --include='**/foo.component.spec.ts'   # run a single test file
+ng generate component <name>                   # scaffold a component (also: service, directive, pipe, ...)
+```
+
+There is no lint target configured and no e2e framework installed.
+
+## Architecture
+
+Standalone-component architecture (no `NgModule`). Key wiring:
+
+- `src/main.ts` → `bootstrapApplication(AppComponent, appConfig)` is the entry point.
+- `src/app/app.config.ts` → `appConfig` is where application-wide providers go. Currently `provideZoneChangeDetection({ eventCoalescing: true })`, `provideRouter(routes)`, and `provideHttpClient()`. Register global HTTP interceptors here (`provideHttpClient(withInterceptors([...]))`).
+- `src/app/app.routes.ts` → the router configuration (`routes`). Define lazy/eager routes here.
+- Components declare their dependencies via the standalone `imports` array in the `@Component` decorator, not through modules.
+
+## Conventions
+
+- Component selector prefix is `app` (e.g. `app-root`), enforced by `angular.json`.
+- TypeScript runs in `strict` mode with additional strictness: `noImplicitOverride`, `noPropertyAccessFromIndexSignature` (index-signature properties must use bracket access), `noImplicitReturns`, `noFallthroughCasesInSwitch`. Angular `strictTemplates` is on.
+- Production build enforces bundle budgets: 500 kB initial (warn) / 1 MB (error), and 4 kB / 8 kB per component stylesheet — keep an eye on these when adding dependencies.
+- Static assets go in `public/` (served at root).
+
+---
+
+# Mission CRUD feature guidance
+
+Conventions for extending the Mission feature (and shaping future features the same way). Where current code already follows a pattern it is noted; where a pattern is recommended but not yet applied everywhere, that is called out so you don't assume it exists.
+
+## 1. Backend integration
+
+- All API access goes through `HttpClient`, provided once in `app.config.ts` via `provideHttpClient()`. Do **not** import `HttpClientModule` (deprecated, module-based).
+- **Base URL:** the REST API is rooted at `http://localhost:8085/api/v1`. Mission endpoints live under `/missions` (`MissionService.baseUrl`). When adding a new resource, follow the same `${API}/<resource>` shape.
+- The URL is currently a hard-coded `private readonly baseUrl` string in the service. If a second service needs the same host, promote the root (`http://localhost:8085/api/v1`) to `src/environments/environment.ts` (Angular's `ng generate environments`) rather than duplicating the literal.
+- **CORS / proxy:** the backend must allow origin `http://localhost:4200`, or add a `proxy.conf.json` and run `ng serve --proxy-config` so `/api` is same-origin. There is no proxy config yet.
+- Timestamps (`Instant`) cross the wire as ISO-8601 strings — keep them typed as `string` in models and convert at the edges (see the form's `datetime-local` helpers).
+
+## 2. Service layer patterns
+
+- Services are `@Injectable({ providedIn: 'root' })` singletons and use the `inject()` function (not constructor params) — matches `MissionService`.
+- **Every method returns a cold `Observable<T>` and does nothing else** — no `.subscribe()` inside the service, no state caching. Subscription (and therefore the actual HTTP call) is the caller's responsibility. This keeps services thin and testable.
+- Type each call with the response shape: `this.http.get<Mission[]>(...)`, `post<Mission>(...)`, `delete<void>(...)`.
+- Use the DTO type (`MissionPayload`) for request bodies and the full entity (`Mission`) for responses — never send server-owned fields (`id`, timestamps) back on create/update.
+- Prefer RxJS operators (`map`, `switchMap`, `catchError`) over nested subscribes. Import operators from `rxjs/operators` and creation functions (`of`) from `rxjs`.
+
+## 3. Reactive Forms
+
+- Use **Reactive Forms** (`ReactiveFormsModule` in the component `imports`), not template-driven forms. `MissionFormComponent` is the reference.
+- Build forms with `inject(FormBuilder)` and **`fb.nonNullable.group({...})`** so controls are typed non-null and reset to their initial value, not `null`.
+- Validators come from `@angular/forms` `Validators` (`required`, `maxLength(200)`, …). Mirror backend constraints on the client (e.g. name is required, max 200).
+- **One shared component for create and edit:** detect mode from the route (`route.snapshot.paramMap.get('id')`), `patchValue` in edit mode, and branch `create()` vs `update()` on submit.
+- Form state: guard submit with `if (this.form.invalid) { this.form.markAllAsTouched(); return; }`; drive error messages off `control.touched && control.hasError(...)`; track an in-flight flag (`submitting`) to disable the submit button. Read values with `getRawValue()` (includes disabled controls).
+
+## 4. Routing
+
+Feature routes are declared in `src/app/app.routes.ts`:
+
+| Path | Component | Purpose |
+|------|-----------|---------|
+| `''` | `MissionListComponent` | list |
+| `missions/new` | `MissionFormComponent` | create |
+| `missions/:id/edit` | `MissionFormComponent` | edit |
+| `missions/:id` | `MissionDetailComponent` | detail |
+
+- **Order matters:** literal/segment routes (`missions/new`, `missions/:id/edit`) must precede the parametric `missions/:id`, or `new` is captured as an `:id`.
+- Navigate declaratively with `[routerLink]="['/missions', id]"` in templates; use `Router.navigate(...)` for post-action redirects (e.g. after save → detail, after delete → list).
+- Read params reactively with `route.paramMap.pipe(switchMap(...))` when the same component instance may be reused for different ids; `route.snapshot` is fine for read-once cases like the form.
+- As routes grow, split them into a `missions.routes.ts` and lazy-load with `loadChildren`.
+
+## 5. Models & DTOs
+
+- All shared TypeScript types live in `src/app/models/` (one file per domain entity, e.g. `mission.model.ts`).
+- Keep the interface a faithful mirror of the backend entity; document serialization quirks in a comment (e.g. `Instant → ISO string`).
+- Express enums as **string-literal union types** (`MissionStatus`) plus a companion `readonly` array (`MISSION_STATUSES`) as the single source of truth for dropdowns — never re-list the values in a template.
+- Derive request DTOs from the entity with `Omit<>` (`MissionPayload = Omit<Mission, 'id' | 'createdAt' | 'updatedAt'>`) so server-owned fields can't leak into a create/update body.
+
+## 6. Component patterns
+
+- **Async pipe first:** prefer `observable$ | async` in the template over manual `subscribe()` where it's natural (list, detail). `MissionListComponent` and `MissionDetailComponent` follow this.
+- Use the built-in control flow (`@if` / `@for` / `@switch`) — this project targets Angular 19; do not use the legacy `*ngIf` / `*ngFor` structural directives.
+- **Standard subscriptions are fine for now.** Imperative `subscribe()` for delete/form load/submit is acceptable and intentional — keep things simple.
+- Model view state as a single object (`{ status: 'loading' | 'loaded' | 'error', data }`) streamed through the async pipe — see `MissionDetailComponent`'s `vm$` built with `startWith` + `catchError` — rather than juggling several boolean flags in the template.
+
+> **Deferred by decision — do NOT add yet:** `ChangeDetectionStrategy.OnPush`, `takeUntilDestroyed()` subscription cleanup, and a global HTTP error interceptor. The focus is getting Mission CRUD (list/create/edit/delete) working with simple, un-optimized code; these are a deliberate later refactor, not an oversight. Don't introduce them as you touch components unless explicitly asked.
+
+## 7. Error handling
+
+- HTTP errors surface through the Observable's error channel. Handle them close to the user: either `catchError` mapping to an error view-state (detail view) or the `error` callback of `subscribe` setting a message flag (form/list).
+- Always give user feedback and log the raw error: show a friendly message (`saveError`, "Mission not found") and `console.error(err)` for diagnostics. Never swallow errors silently.
+- A global HTTP error interceptor is **intentionally deferred** (see the note in Component patterns). For now, handle errors per call at the component boundary. A functional `HttpInterceptorFn` via `provideHttpClient(withInterceptors([...]))` is the eventual home for cross-cutting concerns — add it later when explicitly requested.
+- Distinguish states in the UI: **loading** vs **empty** (`length === 0`) vs **error** are three different renders, not one — the list and detail views already separate them.

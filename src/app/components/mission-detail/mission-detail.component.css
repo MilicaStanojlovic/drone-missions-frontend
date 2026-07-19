@@ -1,0 +1,187 @@
+.mission-detail {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  color: #1f2937;
+}
+
+.mission-detail__back {
+  display: inline-block;
+  margin-bottom: 1.25rem;
+  color: #2563eb;
+  text-decoration: none;
+  font-size: 0.9rem;
+}
+
+.mission-detail__back:hover {
+  text-decoration: underline;
+}
+
+.mission-detail__state {
+  color: #6b7280;
+  padding: 2rem 0;
+}
+
+.mission-detail__state--error h1 {
+  font-size: 1.5rem;
+  margin: 0 0 0.5rem;
+  color: #1f2937;
+}
+
+.card {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 1.75rem;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.card__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-bottom: 1.25rem;
+  border-bottom: 1px solid #f0f1f3;
+}
+
+.card__title-group {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.card__title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.card__actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.card__section {
+  padding: 1.25rem 0;
+  border-bottom: 1px solid #f0f1f3;
+}
+
+.card__section-title {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #6b7280;
+  margin: 0 0 0.5rem;
+}
+
+.card__description {
+  margin: 0;
+  line-height: 1.6;
+  color: #374151;
+  white-space: pre-wrap;
+}
+
+.card__meta {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 1rem 1.5rem;
+  margin: 1.25rem 0 0;
+}
+
+.card__meta-item dt {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #6b7280;
+  margin-bottom: 0.2rem;
+}
+
+.card__meta-item dd {
+  margin: 0;
+  font-size: 0.95rem;
+  color: #1f2937;
+}
+
+/* Status badges — shared with the list view */
+.badge {
+  display: inline-block;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  background: #e5e7eb;
+  color: #374151;
+}
+
+.badge--draft {
+  background: #e5e7eb;
+  color: #4b5563;
+}
+
+.badge--published {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.badge--bidding {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.badge--awarded {
+  background: #ede9fe;
+  color: #6d28d9;
+}
+
+.badge--in_progress {
+  background: #cffafe;
+  color: #0e7490;
+}
+
+.badge--completed {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.badge--cancelled {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+/* Buttons */
+.btn {
+  cursor: pointer;
+  font-size: 0.85rem;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  padding: 0.45rem 0.9rem;
+  font-weight: 500;
+  background: none;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+}
+
+.btn--secondary {
+  border-color: #d1d5db;
+  color: #374151;
+  background: #fff;
+}
+
+.btn--secondary:hover {
+  background: #f9fafb;
+}
+
+.btn--danger-solid {
+  background: #dc2626;
+  color: #fff;
+}
+
+.btn--danger-solid:hover {
+  background: #b91c1c;
+}

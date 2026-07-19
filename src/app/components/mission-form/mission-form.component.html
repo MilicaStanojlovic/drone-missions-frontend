@@ -1,0 +1,80 @@
+<section class="mission-form">
+  <a routerLink="/" class="mission-form__back">&larr; Back to missions</a>
+
+  @if (loadError) {
+    <div class="mission-form__state mission-form__state--error">
+      <h1>Mission not found</h1>
+      <p>We couldn't load this mission for editing. It may have been deleted.</p>
+    </div>
+  } @else {
+    <h1 class="mission-form__title">{{ isEdit ? 'Edit mission' : 'New mission' }}</h1>
+
+    <form class="form-card" [formGroup]="form" (ngSubmit)="isEdit ? saveChanges() : publish()" novalidate>
+      <!-- Name -->
+      <div class="field">
+        <label for="name">Name <span class="field__req">*</span></label>
+        <input
+          id="name"
+          type="text"
+          formControlName="name"
+          maxlength="200"
+          placeholder="e.g. Coastal survey — sector 4"
+          [class.field__input--invalid]="form.controls.name.invalid && form.controls.name.touched"
+        />
+        @if (form.controls.name.touched && form.controls.name.hasError('required')) {
+          <p class="field__error">Name is required.</p>
+        }
+        @if (form.controls.name.hasError('maxlength')) {
+          <p class="field__error">Name must be 200 characters or fewer.</p>
+        }
+      </div>
+
+      <!-- Description -->
+      <div class="field">
+        <label for="description">Description <span class="field__req">*</span></label>
+        <textarea
+          id="description"
+          rows="4"
+          formControlName="description"
+          placeholder="Describe the mission objective, area, and constraints…"
+          [class.field__input--invalid]="form.controls.description.invalid && form.controls.description.touched"
+        ></textarea>
+        @if (form.controls.description.touched && form.controls.description.hasError('required')) {
+          <p class="field__error">Description is required.</p>
+        }
+      </div>
+
+      <!-- Times -->
+      <div class="field-row">
+        <div class="field">
+          <label for="startTime">Start time</label>
+          <input id="startTime" type="datetime-local" formControlName="startTime" />
+        </div>
+        <div class="field">
+          <label for="endTime">End time</label>
+          <input id="endTime" type="datetime-local" formControlName="endTime" />
+        </div>
+      </div>
+
+      @if (saveError) {
+        <p class="form-card__error">{{ saveError }}</p>
+      }
+
+      <div class="form-card__actions">
+        <a routerLink="/" class="btn btn--secondary">Cancel</a>
+        @if (isEdit) {
+          <button type="submit" class="btn btn--primary" [disabled]="submitting">
+            {{ submitting ? 'Saving…' : 'Save changes' }}
+          </button>
+        } @else {
+          <button type="button" class="btn btn--secondary" [disabled]="submitting" (click)="saveAsDraft()">
+            Save as Draft
+          </button>
+          <button type="submit" class="btn btn--primary" [disabled]="submitting">
+            {{ submitting ? 'Saving…' : 'Publish' }}
+          </button>
+        }
+      </div>
+    </form>
+  }
+</section>

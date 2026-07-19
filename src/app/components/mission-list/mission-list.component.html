@@ -1,0 +1,47 @@
+<section class="mission-list">
+  <header class="mission-list__header">
+    <h1>Missions</h1>
+    <a routerLink="/missions/new" class="btn btn--primary">+ New Mission</a>
+  </header>
+
+  @if (missions$ | async; as missions) {
+    @if (missions.length === 0) {
+      <p class="mission-list__empty">No missions yet.</p>
+    } @else {
+      <table class="mission-table">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Description</th>
+            <th>Status</th>
+            <th>Created</th>
+            <th class="mission-table__actions-col">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (mission of missions; track mission.id) {
+            <tr>
+              <td class="mission-table__name">
+                <a [routerLink]="['/missions', mission.id]" class="mission-table__name-link">{{ mission.name }}</a>
+              </td>
+              <td class="mission-table__desc">{{ mission.description }}</td>
+              <td>
+                <span class="badge" [class]="'badge--' + mission.status.toLowerCase()">
+                  {{ statusLabels[mission.status] }}
+                </span>
+              </td>
+              <td>{{ mission.createdAt | date: 'medium' }}</td>
+              <td class="mission-table__actions">
+                <a [routerLink]="['/missions', mission.id]" class="btn btn--link">View Detail</a>
+                <a [routerLink]="['/missions', mission.id, 'edit']" class="btn btn--link">Edit</a>
+                <button type="button" class="btn btn--danger" (click)="deleteMission(mission)">Delete</button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    }
+  } @else {
+    <p class="mission-list__loading">Loading missions…</p>
+  }
+</section>
