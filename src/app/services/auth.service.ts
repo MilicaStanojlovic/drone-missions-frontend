@@ -3,7 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 
-import { LoginPayload, RegisterPayload, UserResponse } from '../models/user.model';
+import { LoginPayload, RegisterPayload, UserResponse, UserRole } from '../models/user.model';
 
 /**
  * Account registration, login and profile against the backend `/api/v1/auth`
@@ -52,11 +52,61 @@ export class AuthService {
     return localStorage.getItem(this.tokenKey);
   }
 
+  /** Logged in = a token that is present and not past its `exp`. */
   get isLoggedIn(): boolean {
-    return this.token !== null;
+    const claims = this.claims();
+    if (!claims) {
+      return false;
+    }
+    const exp = claims['exp'];
+    return typeof exp !== 'number' || exp * 1000 > Date.now();
+  }
+
+  /** Current user's id, read from the token's `sub`. Null when logged out. */
+  get userId(): number | null {
+    const sub = this.claims()?.['sub'];
+    return sub != null ? Number(sub) : null;
+  }
+
+  /** Current user's role, read from the token's `role` claim. */
+  get role(): UserRole | null {
+    const role = this.claims()?.['role'];
+    return role === 'DESIGNER' || role === 'PILOT' ? role : null;
+  }
+
+  get isDesigner(): boolean {
+    return this.role === 'DESIGNER';
+  }
+
+  get isPilot(): boolean {
+    return this.role === 'PILOT';
   }
 
   logout(): void {
     localStorage.removeItem(this.tokenKey);
+  }
+
+  /**
+   * Decodes the JWT payload (base64url) into its claims. The token is minted by
+   * the backend with `sub` = user id and a `role` claim; the signature is not
+   * verified here (the server does that on every request) — this only reads
+   * claims to drive the UI. Returns null for a missing or malformed token.
+   */
+  private claims(): Record<string, unknown> | null {
+    const token = this.token;
+    if (!token) {
+      return null;
+    }
+    const parts = token.split('.');
+    if (parts.length !== 3) {
+      return null;
+    }
+    try {
+      const base64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+      const padded = base64 + '='.repeat((4 - (base64.length % 4)) % 4);
+      return JSON.parse(atob(padded)) as Record<string, unknown>;
+    } catch {
+      return null;
+    }
   }
 }

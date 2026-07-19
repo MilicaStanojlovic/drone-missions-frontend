@@ -1,1 +1,35 @@
-<router-outlet />
+@if (auth.isLoggedIn) {
+  <header class="nav">
+    <div class="nav__inner">
+      <a class="nav__brand" routerLink="/">
+        <span class="nav__logo"></span>
+        <span class="nav__wordmark">DRONEMISSIONS</span>
+      </a>
+
+      <nav class="nav__links">
+        <a
+          routerLink="/missions"
+          routerLinkActive="nav__link--active"
+          [routerLinkActiveOptions]="{ exact: true }"
+          class="nav__link"
+        >Marketplace</a>
+
+        @if (auth.isDesigner) {
+          <a routerLink="/missions/mine" routerLinkActive="nav__link--active" class="nav__link">My Missions</a>
+          <a routerLink="/missions/new" class="nav__cta">+ New Mission</a>
+        }
+      </nav>
+
+      <div class="nav__account">
+        @if (auth.role) {
+          <span class="nav__role">{{ auth.role }}</span>
+        }
+        <button type="button" class="nav__logout" (click)="logout()">Log out</button>
+      </div>
+    </div>
+  </header>
+}
+
+<main class="app-main">
+  <router-outlet />
+</main>

@@ -1,10 +1,35 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import {
+  AbstractControl,
+  FormBuilder,
+  ReactiveFormsModule,
+  ValidationErrors,
+  ValidatorFn,
+  Validators
+} from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
 import { Mission, MissionPayload, MissionStatus } from '../../models/mission.model';
 import { MissionService } from '../../services/mission.service';
+
+/** Fails if the value is only whitespace (so " " doesn't satisfy `required`). */
+const notBlank: ValidatorFn = (control: AbstractControl): ValidationErrors | null => {
+  const value = control.value;
+  return typeof value === 'string' && value.length > 0 && value.trim().length === 0
+    ? { blank: true }
+    : null;
+};
+
+/** Group validator: end time, when set, must not be before the start time. */
+const endAfterStart: ValidatorFn = (group: AbstractControl): ValidationErrors | null => {
+  const start = group.get('startTime')?.value;
+  const end = group.get('endTime')?.value;
+  if (!start || !end) {
+    return null;
+  }
+  return new Date(end).getTime() < new Date(start).getTime() ? { endBeforeStart: true } : null;
+};
 
 @Component({
   selector: 'app-mission-form',
@@ -27,15 +52,30 @@ export class MissionFormComponent implements OnInit {
   loadError = false;
   saveError: string | null = null;
 
-  readonly form = this.fb.nonNullable.group({
-    name: ['', [Validators.required, Validators.maxLength(200)]],
-    description: ['', [Validators.required]],
-    startTime: [''],
-    endTime: ['']
-  });
+  /** Field limits — mirror the backend columns (name varchar(255), description varchar(2000)). */
+  readonly maxName = 200;
+  readonly maxDescription = 2000;
+
+  readonly form = this.fb.nonNullable.group(
+    {
+      name: ['', [Validators.required, notBlank, Validators.maxLength(this.maxName)]],
+      description: ['', [Validators.required, notBlank, Validators.maxLength(this.maxDescription)]],
+      startTime: [''],
+      endTime: ['']
+    },
+    { validators: endAfterStart }
+  );
 
   get isEdit(): boolean {
     return this.missionId !== null;
+  }
+
+  get nameLength(): number {
+    return this.form.controls.name.value.length;
+  }
+
+  get descriptionLength(): number {
+    return this.form.controls.description.value.length;
   }
 
   ngOnInit(): void {

@@ -9,8 +9,15 @@ export class MissionService {
   private readonly http = inject(HttpClient);
   private readonly baseUrl = 'http://localhost:8085/api/v1/missions';
 
+  /** The open marketplace — every mission the backend exposes to all users
+   *  (PUBLISHED / BIDDING). */
   getAll(): Observable<Mission[]> {
     return this.http.get<Mission[]>(this.baseUrl);
+  }
+
+  /** Only the missions created by the current user. */
+  getMine(): Observable<Mission[]> {
+    return this.http.get<Mission[]>(`${this.baseUrl}/my-missions`);
   }
 
   getById(id: number): Observable<Mission> {
