@@ -1,119 +1,183 @@
-<section class="mission-form">
-  <a routerLink="/" class="mission-form__back">&larr; Back to missions</a>
-
-  @if (loadError) {
-    <div class="mission-form__state mission-form__state--error">
-      <h1>Mission not found</h1>
-      <p>We couldn't load this mission for editing. It may have been deleted.</p>
-    </div>
-  } @else {
-    <h1 class="mission-form__title">{{ isEdit ? 'Edit mission' : 'New mission' }}</h1>
-
-    <form class="form-card" [formGroup]="form" (ngSubmit)="isEdit ? saveChanges() : publish()" novalidate>
-      <!-- Name -->
-      <div class="field">
-        <label for="name">Name <span class="field__req">*</span></label>
-        <input
-          id="name"
-          type="text"
-          formControlName="name"
-          [attr.maxlength]="maxName"
-          placeholder="e.g. Coastal survey — sector 4"
-          [class.field__input--invalid]="form.controls.name.invalid && form.controls.name.touched"
-        />
-        <div class="field__meta">
-          <div class="field__errors">
-            @if (form.controls.name.touched && form.controls.name.hasError('required')) {
-              <p class="field__error">Name is required.</p>
-            } @else if (form.controls.name.touched && form.controls.name.hasError('blank')) {
-              <p class="field__error">Name can't be only spaces.</p>
-            } @else if (form.controls.name.hasError('maxlength')) {
-              <p class="field__error">Name must be {{ maxName }} characters or fewer.</p>
-            }
-          </div>
-          <span class="field__count" [class.field__count--over]="nameLength >= maxName">
-            {{ nameLength }}/{{ maxName }}
-          </span>
+@if (loadError) {
+  <div class="editor__notfound">
+    <h1>Mission not found</h1>
+    <p>We couldn't load this mission for editing. It may have been deleted.</p>
+    <button type="button" class="btn btn--soft" (click)="cancel()">← Back to My Missions</button>
+  </div>
+} @else {
+  <div class="editor">
+    <!-- header bar -->
+    <div class="editor__bar">
+      <div class="editor__bar-left">
+        <button type="button" class="btn btn--soft" (click)="cancel()">← Back</button>
+        <div>
+          <div class="editor__title">{{ isEdit ? 'Edit mission' : 'New mission' }}</div>
+          <div class="editor__subtitle">DRAG NODES TO ADJUST · CLICK MAP TO ADD</div>
         </div>
       </div>
-
-      <!-- Description -->
-      <div class="field">
-        <label for="description">Description <span class="field__req">*</span></label>
-        <textarea
-          id="description"
-          rows="4"
-          formControlName="description"
-          [attr.maxlength]="maxDescription"
-          placeholder="Describe the mission objective, area, and constraints…"
-          [class.field__input--invalid]="form.controls.description.invalid && form.controls.description.touched"
-        ></textarea>
-        <div class="field__meta">
-          <div class="field__errors">
-            @if (form.controls.description.touched && form.controls.description.hasError('required')) {
-              <p class="field__error">Description is required.</p>
-            } @else if (form.controls.description.touched && form.controls.description.hasError('blank')) {
-              <p class="field__error">Description can't be only spaces.</p>
-            } @else if (form.controls.description.hasError('maxlength')) {
-              <p class="field__error">Description must be {{ maxDescription }} characters or fewer.</p>
-            }
-          </div>
-          <span class="field__count" [class.field__count--over]="descriptionLength >= maxDescription">
-            {{ descriptionLength }}/{{ maxDescription }}
-          </span>
-        </div>
-      </div>
-
-      <!-- Times -->
-      <div class="field-row">
-        <div class="field">
-          <label for="startTime">Start time <span class="field__req">*</span></label>
-          <input
-            id="startTime"
-            type="datetime-local"
-            formControlName="startTime"
-            [class.field__input--invalid]="form.controls.startTime.invalid && form.controls.startTime.touched"
-          />
-          @if (form.controls.startTime.touched && form.controls.startTime.hasError('required')) {
-            <p class="field__error">Start time is required.</p>
-          }
-        </div>
-        <div class="field">
-          <label for="endTime">End time <span class="field__req">*</span></label>
-          <input
-            id="endTime"
-            type="datetime-local"
-            formControlName="endTime"
-            [class.field__input--invalid]="(form.controls.endTime.invalid || form.hasError('endBeforeStart')) && form.controls.endTime.touched"
-          />
-          @if (form.controls.endTime.touched && form.controls.endTime.hasError('required')) {
-            <p class="field__error">End time is required.</p>
-          }
-        </div>
-      </div>
-      @if (form.hasError('endBeforeStart') && form.controls.endTime.touched) {
-        <p class="field__error">End time can't be before the start time.</p>
-      }
-
-      @if (saveError) {
-        <p class="form-card__error">{{ saveError }}</p>
-      }
-
-      <div class="form-card__actions">
-        <a routerLink="/" class="btn btn--secondary">Cancel</a>
-        @if (isEdit) {
-          <button type="submit" class="btn btn--primary" [disabled]="submitting">
-            {{ submitting ? 'Saving…' : 'Save changes' }}
+      <div class="editor__bar-actions">
+        @if (!isEdit) {
+          <button type="button" class="btn btn--soft" [disabled]="submitting" (click)="saveAsDraft()">Save as Draft</button>
+          <button type="button" class="btn btn--primary" [disabled]="submitting" (click)="publish()">
+            {{ submitting ? 'Saving…' : 'Publish' }}
           </button>
         } @else {
-          <button type="button" class="btn btn--secondary" [disabled]="submitting" (click)="saveAsDraft()">
-            Save as Draft
-          </button>
-          <button type="submit" class="btn btn--primary" [disabled]="submitting">
-            {{ submitting ? 'Saving…' : 'Publish' }}
+          <button type="button" class="btn btn--primary" [disabled]="submitting" (click)="saveChanges()">
+            {{ submitting ? 'Saving…' : 'Save changes' }}
           </button>
         }
       </div>
-    </form>
-  }
-</section>
+    </div>
+
+    <div class="editor__body">
+      <!-- map pane -->
+      <div class="editor__map-pane">
+        <div class="editor__tools">
+          <div class="seg">
+            <button type="button" class="seg__btn" [class.seg__btn--active]="mode === 'add'" (click)="setMode('add')">+ Add node</button>
+            <button type="button" class="seg__btn" [class.seg__btn--active]="mode === 'select'" (click)="setMode('select')">Move / edit</button>
+            <button type="button" class="seg__btn" [class.seg__btn--active]="mode === 'pan'" (click)="setMode('pan')">Pan</button>
+          </div>
+          <div class="editor__zone">
+            <span class="editor__zone-label">ZONE</span>
+            <div class="seg">
+              <button type="button" class="seg__btn" [class.seg__btn--active]="geofence.type === 'circle'" (click)="setZone('circle')">◯ Circle</button>
+              <button type="button" class="seg__btn" [class.seg__btn--active]="geofence.type === 'polygon'" (click)="setZone('polygon')">⬡ Polygon</button>
+            </div>
+          </div>
+          <div class="editor__tools-right">
+            <button type="button" class="btn btn--soft" (click)="undo()">Undo</button>
+            <button type="button" class="btn btn--danger-ghost" (click)="clear()">Clear</button>
+          </div>
+        </div>
+
+        <div class="editor__map-area">
+          <div class="editor__map-wrap">
+            <app-mission-map
+              [editable]="true"
+              [mode]="mode"
+              [seed]="mapSeed"
+              [waypoints]="waypoints"
+              [geofence]="geofence"
+              (waypointsChange)="onWaypoints($event)"
+              (geofenceChange)="onGeofence($event)"
+              (cursorMove)="cursor = $event"
+              (outOfZone)="onOutOfZone()"
+            />
+          </div>
+        </div>
+
+        <div class="editor__readouts">
+          <div><span class="ro__label">WAYPOINTS</span> <span class="ro__value ro__value--accent">{{ waypointCount }}</span></div>
+          <div><span class="ro__label">PATH</span> <span class="ro__value">{{ pathText }}</span></div>
+          <div><span class="ro__label">EST. FLIGHT</span> <span class="ro__value">{{ flightText }}</span></div>
+          <div class="editor__cursor"><span class="ro__label">CURSOR</span> <span class="ro__value">{{ cursorText }}</span></div>
+          @if (zoneWarn) {
+            <div class="editor__warn">Waypoint must be inside the flight zone</div>
+          }
+        </div>
+      </div>
+
+      <!-- brief form pane -->
+      <form class="editor__form" [formGroup]="form" (ngSubmit)="isEdit ? saveChanges() : publish()" novalidate>
+        <div class="editor__form-eyebrow">MISSION BRIEF</div>
+
+        <label class="fld">
+          <span class="fld__label">Title</span>
+          <input
+            class="fld__input"
+            type="text"
+            formControlName="name"
+            [attr.maxlength]="maxName"
+            placeholder="e.g. Rooftop Solar Inspection"
+            [class.fld__input--invalid]="form.controls.name.invalid && form.controls.name.touched"
+          />
+          @if (form.controls.name.touched && form.controls.name.hasError('required')) {
+            <span class="fld__err">Title is required.</span>
+          } @else if (form.controls.name.touched && form.controls.name.hasError('blank')) {
+            <span class="fld__err">Title can't be only spaces.</span>
+          }
+        </label>
+
+        <label class="fld">
+          <span class="fld__label">Location</span>
+          <input class="fld__input" type="text" formControlName="location" placeholder="City, State" />
+        </label>
+
+        <label class="fld">
+          <span class="fld__label">Description</span>
+          <textarea
+            class="fld__input fld__textarea"
+            rows="4"
+            formControlName="description"
+            [attr.maxlength]="maxDescription"
+            placeholder="What the pilot needs to know — altitude, pattern, constraints…"
+            [class.fld__input--invalid]="form.controls.description.invalid && form.controls.description.touched"
+          ></textarea>
+          <div class="fld__meta">
+            <span class="fld__err">
+              @if (form.controls.description.touched && form.controls.description.hasError('required')) {
+                Description is required.
+              } @else if (form.controls.description.touched && form.controls.description.hasError('blank')) {
+                Description can't be only spaces.
+              }
+            </span>
+            <span class="fld__count" [class.fld__count--over]="descriptionLength >= maxDescription">
+              {{ descriptionLength }}/{{ maxDescription }}
+            </span>
+          </div>
+        </label>
+
+        <div class="fld-row">
+          <label class="fld">
+            <span class="fld__label">Start date</span>
+            <input
+              class="fld__input"
+              type="date"
+              formControlName="startDate"
+              [class.fld__input--invalid]="form.controls.startDate.invalid && form.controls.startDate.touched"
+            />
+          </label>
+          <label class="fld">
+            <span class="fld__label">End date</span>
+            <input
+              class="fld__input"
+              type="date"
+              formControlName="endDate"
+              [class.fld__input--invalid]="(form.controls.endDate.invalid || form.hasError('endBeforeStart')) && form.controls.endDate.touched"
+            />
+          </label>
+        </div>
+        @if (
+          (form.controls.startDate.touched && form.controls.startDate.hasError('required')) ||
+          (form.controls.endDate.touched && form.controls.endDate.hasError('required'))
+        ) {
+          <span class="fld__err">Start and end dates are required.</span>
+        } @else if (form.hasError('endBeforeStart') && form.controls.endDate.touched) {
+          <span class="fld__err">End date can't be before the start date.</span>
+        }
+
+        <label class="fld">
+          <span class="fld__label">Bidding deadline</span>
+          <input class="fld__input" type="date" formControlName="biddingDeadline" />
+        </label>
+
+        <div class="checklist">
+          <div class="checklist__title">TO PUBLISH</div>
+          <div class="checklist__item">
+            <span class="checklist__mark" [class.checklist__mark--ok]="hasTitle">{{ hasTitle ? '✓' : '○' }}</span>
+            A mission title
+          </div>
+          <div class="checklist__item">
+            <span class="checklist__mark" [class.checklist__mark--ok]="hasWaypoints">{{ hasWaypoints ? '✓' : '○' }}</span>
+            At least 2 waypoints on the map
+          </div>
+        </div>
+
+        @if (saveError) {
+          <p class="editor__save-error">{{ saveError }}</p>
+        }
+      </form>
+    </div>
+  </div>
+}

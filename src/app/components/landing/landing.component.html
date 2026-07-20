@@ -1,0 +1,55 @@
+<div class="landing">
+  <div class="landing__grid" aria-hidden="true"></div>
+  <div class="landing__glow" aria-hidden="true"></div>
+
+  <div class="landing__inner">
+    <div class="landing__brand">
+      <span class="landing__logo"></span>
+      <span class="landing__wordmark">DRONEMISSIONS</span>
+    </div>
+
+    <h1 class="landing__title">The marketplace for<br />drone flight missions</h1>
+    <p class="landing__sub">
+      Plan a mission on the map, publish it for bids, and award the job to a licensed pilot.
+      Choose how you want to get started.
+    </p>
+
+    <div class="landing__roles">
+      <a class="role role--designer" [routerLink]="['/register']" [queryParams]="{ role: 'DESIGNER' }">
+        <div class="role__head">
+          <span class="role__icon role__icon--designer"><span class="role__diamond"></span></span>
+          <span class="role__eyebrow role__eyebrow--designer">ROLE 01</span>
+        </div>
+        <div class="role__name">Mission Designer</div>
+        <p class="role__desc">Plot waypoints on the map, publish the job, review incoming bids and award it to one pilot.</p>
+        <span class="role__cta role__cta--designer">Continue as Designer&nbsp;→</span>
+      </a>
+
+      <a class="role role--pilot" [routerLink]="['/register']" [queryParams]="{ role: 'PILOT' }">
+        <div class="role__head">
+          <span class="role__icon role__icon--pilot"><span class="role__circle"></span></span>
+          <span class="role__eyebrow role__eyebrow--pilot">ROLE 02</span>
+        </div>
+        <div class="role__name">Pilot</div>
+        <p class="role__desc">Browse published missions, study the flight plan, place a bid, and fly the jobs you win.</p>
+        <span class="role__cta role__cta--pilot">Continue as Pilot&nbsp;→</span>
+      </a>
+    </div>
+
+    <div class="landing__lifecycle">
+      @for (status of lifecycle; track status; let last = $last) {
+        <span class="chip">
+          <span class="chip__dot" [style.background]="statusColors[status]"></span>
+          {{ statusLabels[status] }}
+        </span>
+        @if (!last) {
+          <span class="chip__sep">›</span>
+        }
+      }
+    </div>
+
+    <p class="landing__foot">
+      Already have an account? <a routerLink="/login">Sign in</a>
+    </p>
+  </div>
+</div>

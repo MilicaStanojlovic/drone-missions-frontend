@@ -1,0 +1,148 @@
+.profile {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 32px 24px 72px;
+  font-family: 'Space Grotesk', system-ui, sans-serif;
+  color: #1b2732;
+  animation: profile-in 0.25s ease;
+}
+
+@keyframes profile-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
+
+.profile__head {
+  margin-bottom: 22px;
+}
+
+.profile__eyebrow {
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  color: #93a1b0;
+  margin-bottom: 8px;
+}
+
+.profile__title {
+  font-size: 30px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  margin: 0;
+  color: #141e28;
+}
+
+.profile__card {
+  background: #ffffff;
+  border: 1px solid #e8edf2;
+  border-radius: 14px;
+  padding: 26px;
+  box-shadow: 0 1px 2px rgba(20, 35, 55, 0.04), 0 10px 30px rgba(20, 35, 55, 0.05);
+}
+
+.profile__id {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding-bottom: 22px;
+  border-bottom: 1px solid #eef2f6;
+}
+
+.profile__avatar {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.profile__name {
+  font-size: 20px;
+  font-weight: 700;
+  color: #141e28;
+  margin-bottom: 7px;
+  word-break: break-word;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 4px 10px;
+  border-radius: 20px;
+  border: 1px solid transparent;
+}
+
+.badge__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+
+.profile__fields {
+  margin: 0;
+  padding: 22px 0 4px;
+}
+
+.field {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 11px 0;
+  border-bottom: 1px solid #f2f5f8;
+}
+
+.field:last-child {
+  border-bottom: none;
+}
+
+.field dt {
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #93a1b0;
+}
+
+.field dd {
+  margin: 0;
+  font-size: 14px;
+  color: #1b2732;
+  text-align: right;
+  word-break: break-word;
+}
+
+.profile__logout {
+  margin-top: 22px;
+  width: 100%;
+  background: #ffffff;
+  border: 1px solid #dbe2ea;
+  color: #43525f;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  padding: 11px;
+  border-radius: 9px;
+  cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease;
+}
+
+.profile__logout:hover {
+  border-color: #c3ccd6;
+  color: #1b2732;
+}
+
+.profile__state {
+  color: #6b7c8d;
+  padding: 40px 0;
+}

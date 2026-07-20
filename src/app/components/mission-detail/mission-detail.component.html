@@ -1,78 +1,163 @@
-<section class="mission-detail">
-  <a routerLink="/" class="mission-detail__back">&larr; Back to missions</a>
+@if (loading) {
+  <p class="state">Loading mission…</p>
+} @else if (error || !mission) {
+  <div class="state state--error">
+    <h1>Mission not found</h1>
+    <p>We couldn't load this mission. It may have been deleted.</p>
+    <button type="button" class="btn btn--soft" (click)="back()">← {{ backLabel }}</button>
+  </div>
+} @else {
+  <main class="detail">
+    <button type="button" class="detail__back" (click)="back()">← {{ backLabel }}</button>
 
-  @if (vm$ | async; as vm) {
-    @switch (vm.status) {
-      @case ('loading') {
-        <p class="mission-detail__state">Loading mission…</p>
-      }
-      @case ('error') {
-        <div class="mission-detail__state mission-detail__state--error">
-          <h1>Mission not found</h1>
-          <p>We couldn't load this mission. It may have been deleted.</p>
+    <div class="detail__head">
+      <div class="detail__head-info">
+        <div class="detail__badge-row">
+          <span
+            class="badge"
+            [style.color]="statusColors[mission.status]"
+            [style.background]="statusColors[mission.status] + '1a'"
+            [style.border-color]="statusColors[mission.status] + '55'"
+          >
+            <span class="badge__dot" [style.background]="statusColors[mission.status]"></span>
+            {{ statusLabels[mission.status] }}
+          </span>
+          @if (plan?.location) {
+            <span class="detail__loc">{{ plan?.location }}</span>
+          }
+        </div>
+        <h1 class="detail__title">{{ mission.name }}</h1>
+      </div>
+      @if (isOwner) {
+        <div class="detail__actions">
+          <a [routerLink]="['/missions', mission.id, 'edit']" class="btn btn--soft">Edit</a>
+          <button type="button" class="btn btn--danger" (click)="askDelete()">Delete</button>
         </div>
       }
-      @case ('loaded') {
-        @if (vm.mission; as mission) {
-          <article class="card">
-            <header class="card__header">
-              <div class="card__title-group">
-                <h1 class="card__title">{{ mission.name }}</h1>
-                <span class="badge" [class]="'badge--' + mission.status.toLowerCase()">
-                  {{ statusLabels[mission.status] }}
-                </span>
+    </div>
+
+    <!-- status timeline -->
+    <div class="timeline">
+      @for (st of steps; track st.label) {
+        <div class="timeline__step">
+          <span
+            class="timeline__dot"
+            [class.timeline__dot--reached]="st.reached"
+            [style.border-color]="st.reached ? st.color : '#cbd5df'"
+            [style.background]="st.reached ? st.color : '#ffffff'"
+            [style.box-shadow]="st.current ? '0 0 0 4px ' + st.color + '29' : 'none'"
+          ></span>
+          <span class="timeline__label" [class.timeline__label--reached]="st.reached">{{ st.label }}</span>
+          @if (!st.last) {
+            <span class="timeline__line"></span>
+          }
+        </div>
+      }
+    </div>
+
+    <div class="detail__grid">
+      <div class="detail__main">
+        <div class="detail__map">
+          @if (waypoints.length) {
+            <app-mission-map [seed]="'m' + mission.id" [waypoints]="waypoints" [geofence]="geofence" [editable]="false" />
+          } @else {
+            <div class="detail__map-empty">No flight plan was saved for this mission.</div>
+          }
+        </div>
+
+        <div class="telemetry">
+          <div class="tele"><div class="tele__label">Waypoints</div><div class="tele__value">{{ waypoints.length }}</div></div>
+          <div class="tele"><div class="tele__label">Path length</div><div class="tele__value">{{ pathText }}</div></div>
+          <div class="tele"><div class="tele__label">Est. flight</div><div class="tele__value">{{ flightText }}</div></div>
+          <div class="tele"><div class="tele__label">Bids</div><div class="tele__value">{{ bids.length }}</div></div>
+        </div>
+
+        <div class="brief">
+          <div class="brief__eyebrow">BRIEF</div>
+          <p class="brief__desc">{{ mission.description }}</p>
+          <div class="brief__meta">
+            <div>
+              <div class="brief__meta-label">Flight window</div>
+              <div class="brief__meta-value">{{ windowText }}</div>
+            </div>
+            <div>
+              <div class="brief__meta-label">Bidding</div>
+              <div class="brief__meta-value">{{ deadlineText }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- bids panel -->
+      <aside class="panel">
+        @if (auth.isPilot) {
+          <div class="panel__head"><span class="panel__title">Your bid</span></div>
+          <div class="panel__body">
+            @if (myBid) {
+              <div class="mybid">
+                <div class="mybid__label">Current bid</div>
+                <div class="mybid__amount">${{ myBid.amount }}</div>
+                @if (myBid.status === 'accepted') {
+                  <div class="mybid__status mybid__status--won">✓ You won this mission</div>
+                } @else if (myBid.status === 'declined') {
+                  <div class="mybid__status mybid__status--lost">This bid was declined</div>
+                }
               </div>
-              @if (canModify(mission)) {
-                <div class="card__actions">
-                  <a [routerLink]="['/missions', mission.id, 'edit']" class="btn btn--secondary">Edit</a>
-                  <button type="button" class="btn btn--danger-solid" (click)="askDelete(mission)">Delete</button>
+            }
+            @if (canBid) {
+              <label class="bidfield">
+                <span class="bidfield__label">{{ myBid ? 'Update your bid (USD)' : 'Your bid (USD)' }}</span>
+                <input class="bidfield__input" type="number" min="1" placeholder="e.g. 450"
+                  [value]="bidAmount" (input)="bidAmount = $any($event.target).value" />
+              </label>
+              <button type="button" class="panel__cta" (click)="placeBid()">{{ myBid ? 'Update bid' : 'Place bid' }}</button>
+            } @else if (!myBid) {
+              <div class="panel__empty">This mission isn't open for bids.</div>
+            }
+            <p class="panel__note">Bids are a local demo — not saved to the server yet.</p>
+          </div>
+        } @else {
+          <div class="panel__head">
+            <span class="panel__title">Bids</span>
+            <span class="panel__count">{{ bidCountText }}</span>
+          </div>
+          @if (!bids.length) {
+            <div class="panel__empty">No bids have come in yet.</div>
+          } @else {
+            <div class="bids">
+              @for (b of bids; track b.id) {
+                <div class="bid" [class.bid--accepted]="b.status === 'accepted'">
+                  <div class="bid__row">
+                    <div class="bid__who">
+                      <span class="bid__pilot">{{ b.pilotName }}</span>
+                      @if (b.status === 'accepted') { <span class="bid__tag bid__tag--awarded">AWARDED</span> }
+                      @if (b.status === 'declined') { <span class="bid__tag">DECLINED</span> }
+                    </div>
+                    <div class="bid__price">${{ b.amount }}</div>
+                  </div>
+                  @if (isOwner && !hasAward && b.status === 'pending') {
+                    <button type="button" class="bid__award" (click)="award(b)">Award to {{ firstName(b.pilotName) }}</button>
+                  }
                 </div>
               }
-            </header>
-
-            <div class="card__section">
-              <h2 class="card__section-title">Description</h2>
-              <p class="card__description">{{ mission.description }}</p>
             </div>
-
-            <dl class="card__meta">
-              <div class="card__meta-item">
-                <dt>Mission ID</dt>
-                <dd>{{ mission.id }}</dd>
-              </div>
-              <div class="card__meta-item">
-                <dt>Start time</dt>
-                <dd>{{ mission.startTime ? (mission.startTime | date: 'medium') : '—' }}</dd>
-              </div>
-              <div class="card__meta-item">
-                <dt>End time</dt>
-                <dd>{{ mission.endTime ? (mission.endTime | date: 'medium') : '—' }}</dd>
-              </div>
-              <div class="card__meta-item">
-                <dt>Created</dt>
-                <dd>{{ mission.createdAt | date: 'medium' }}</dd>
-              </div>
-              <div class="card__meta-item">
-                <dt>Last updated</dt>
-                <dd>{{ mission.updatedAt | date: 'medium' }}</dd>
-              </div>
-            </dl>
-          </article>
+          }
+          @if (isOwner) {
+            <p class="panel__note">Bids are a local demo — awarding is client-only for now.</p>
+          }
         }
-      }
-    }
-  }
-</section>
+      </aside>
+    </div>
+  </main>
+}
 
 <app-confirm-dialog
-  [open]="!!pendingDelete"
+  [open]="pendingDelete"
   title="Delete mission?"
-  [message]="pendingDelete
-    ? '“' + pendingDelete.name + '” will be permanently removed. This cannot be undone.'
-    : ''"
+  [message]="mission ? '“' + mission.name + '” will be permanently removed. This cannot be undone.' : ''"
   confirmText="Delete mission"
   cancelText="Cancel"
   [danger]="true"
   (confirm)="confirmDelete()"
-  (cancel)="pendingDelete = null"
+  (cancel)="pendingDelete = false"
 />

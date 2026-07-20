@@ -1,66 +1,124 @@
-<section class="mission-list">
-  <header class="mission-list__header">
-    <h1>{{ mine ? 'My Missions' : 'Marketplace' }}</h1>
-    @if (auth.isDesigner) {
-      <a routerLink="/missions/new" class="btn btn--primary">+ New Mission</a>
-    }
-  </header>
+<section class="page">
+  @if (mine) {
+    <!-- ===== Designer dashboard ===== -->
+    <header class="page__head">
+      <div>
+        <div class="page__eyebrow page__eyebrow--designer">MISSION DESIGNER</div>
+        <h1 class="page__title">My Missions</h1>
+      </div>
+      @if (auth.isDesigner) {
+        <a routerLink="/missions/new" class="page__cta">
+          <span class="page__cta-plus">+</span> New Mission
+        </a>
+      }
+    </header>
 
-  @if (missions$ | async; as missions) {
-    @if (missions.length === 0) {
-      <p class="mission-list__empty">
-        {{ mine ? "You haven't created any missions yet." : 'No missions available right now.' }}
-      </p>
-    } @else {
-      <table class="mission-table">
-        <thead>
-          <tr>
-            <th>Name</th>
-            <th>Description</th>
-            <th>Status</th>
-            <th>Created</th>
-            <th class="mission-table__actions-col">Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (mission of missions; track mission.id) {
-            <tr>
-              <td class="mission-table__name">
-                <a [routerLink]="['/missions', mission.id]" class="mission-table__name-link">{{ mission.name }}</a>
-              </td>
-              <td class="mission-table__desc">{{ mission.description }}</td>
-              <td>
-                <span class="badge" [class]="'badge--' + mission.status.toLowerCase()">
-                  {{ statusLabels[mission.status] }}
-                </span>
-              </td>
-              <td>{{ mission.createdAt | date: 'medium' }}</td>
-              <td class="mission-table__actions">
-                <a [routerLink]="['/missions', mission.id]" class="btn btn--link">View Detail</a>
-                @if (canModify(mission)) {
-                  <a [routerLink]="['/missions', mission.id, 'edit']" class="btn btn--link">Edit</a>
-                  <button type="button" class="btn btn--danger" (click)="askDelete(mission)">Delete</button>
-                }
-              </td>
-            </tr>
-          }
-        </tbody>
-      </table>
+    @if (!loading && !error && missions.length) {
+      <div class="stats">
+        @for (s of stats; track s.label) {
+          <div class="stat">
+            <div class="stat__value" [style.color]="s.color">{{ s.value }}</div>
+            <div class="stat__label">{{ s.label }}</div>
+          </div>
+        }
+      </div>
     }
   } @else {
-    <p class="mission-list__loading">Loading missions…</p>
+    <!-- ===== Pilot feed / marketplace ===== -->
+    <header class="page__head page__head--feed">
+      <div>
+        <div class="page__eyebrow" [class.page__eyebrow--pilot]="auth.isPilot">
+          {{ auth.isPilot ? 'PILOT' : 'MARKETPLACE' }}
+        </div>
+        <h1 class="page__title">Browse missions</h1>
+      </div>
+    </header>
+
+    <div class="feed-controls">
+      <div class="tabs">
+        <button type="button" class="tab" [class.tab--active]="tab === 'open'" (click)="setTab('open')">
+          Open missions
+        </button>
+        <button type="button" class="tab" [class.tab--active]="tab === 'mine'" (click)="setTab('mine')">
+          My bids &amp; jobs
+        </button>
+      </div>
+      @if (tab === 'open') {
+        <div class="search">
+          <span class="search__icon" aria-hidden="true">⚲</span>
+          <input
+            #searchInput
+            class="search__input"
+            type="text"
+            placeholder="Search missions by name…"
+            [value]="search"
+            (input)="onSearch(searchInput.value)"
+          />
+        </div>
+      }
+    </div>
+  }
+
+  <!-- ===== Body ===== -->
+  @if (loading) {
+    <p class="page__state">Loading missions…</p>
+  } @else if (error) {
+    <p class="page__state page__state--error">Couldn't load missions. Please try again.</p>
+  } @else if (visibleMissions.length === 0) {
+    <div class="empty">
+      <div class="empty__title">
+        {{ mine ? 'No missions yet' : (tab === 'mine' ? 'No bids yet' : 'No open missions') }}
+      </div>
+      <div class="empty__sub">
+        {{ mine
+          ? 'Create your first mission to start collecting bids.'
+          : (tab === 'mine' ? 'Missions you bid on will appear here.' : 'Check back soon for published missions.') }}
+      </div>
+    </div>
+  } @else {
+    <div class="cards">
+      @for (m of visibleMissions; track m.id) {
+        <a class="card" [routerLink]="['/missions', m.id]">
+          <div class="card__thumb">
+            <app-mission-map
+              class="card__map"
+              [seed]="'m' + m.id"
+              [mini]="true"
+              [waypoints]="waypointsFor(m.id)"
+              [geofence]="geofenceFor(m.id)"
+              [animatePath]="false"
+            />
+            <span
+              class="badge"
+              [style.color]="statusColors[m.status]"
+              [style.background]="statusColors[m.status] + '1a'"
+              [style.border-color]="statusColors[m.status] + '55'"
+            >
+              <span class="badge__dot" [style.background]="statusColors[m.status]"></span>
+              {{ statusLabels[m.status] }}
+            </span>
+          </div>
+          <div class="card__body">
+            <div class="card__title">{{ m.name }}</div>
+            @if (locationFor(m.id)) {
+              <div class="card__location">{{ locationFor(m.id) }}</div>
+            }
+            <div class="card__meta">
+              <div class="card__meta-item">
+                <div class="card__meta-label">Window</div>
+                <div class="card__meta-value">{{ formatWindow(m) }}</div>
+              </div>
+              <div class="card__meta-item">
+                <div class="card__meta-label">Path</div>
+                <div class="card__meta-value">{{ pathFor(m.id) }}</div>
+              </div>
+            </div>
+            <div class="card__foot">
+              <span>Created {{ m.createdAt | date: 'mediumDate' }}</span>
+            </div>
+          </div>
+        </a>
+      }
+    </div>
   }
 </section>
-
-<app-confirm-dialog
-  [open]="!!pendingDelete"
-  title="Delete mission?"
-  [message]="pendingDelete
-    ? '“' + pendingDelete.name + '” will be permanently removed. This cannot be undone.'
-    : ''"
-  confirmText="Delete mission"
-  cancelText="Cancel"
-  [danger]="true"
-  (confirm)="confirmDelete()"
-  (cancel)="pendingDelete = null"
-/>

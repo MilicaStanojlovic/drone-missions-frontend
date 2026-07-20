@@ -25,15 +25,14 @@ export const designerGuard: CanActivateFn = () => {
 };
 
 /**
- * The role-based landing: DESIGNERs go to their own missions, PILOTs to the
- * open marketplace. Logged-out users go to login. Used on the '' route so
- * every entry point resolves to the right home.
+ * The '' route: a logged-in user is sent to their role home (DESIGNER → their
+ * missions, PILOT → the open marketplace); a logged-out visitor stays to see
+ * the public landing page.
  */
-export const homeRedirectGuard: CanActivateFn = () => {
+export const landingGuard: CanActivateFn = () => {
   const auth = inject(AuthService);
   const router = inject(Router);
-  if (!auth.isLoggedIn) {
-    return router.createUrlTree(['/login']);
-  }
-  return router.createUrlTree([auth.isDesigner ? '/missions/mine' : '/missions']);
+  return auth.isLoggedIn
+    ? router.createUrlTree([auth.isDesigner ? '/missions/mine' : '/missions'])
+    : true;
 };

@@ -1,0 +1,53 @@
+<section class="profile">
+  <header class="profile__head">
+    <div class="profile__eyebrow">ACCOUNT</div>
+    <h1 class="profile__title">My Profile</h1>
+  </header>
+
+  @if (profile$ | async; as user) {
+    <div class="profile__card">
+      <div class="profile__id">
+        <div
+          class="profile__avatar"
+          [style.background]="roleColor(user.role) + '1a'"
+          [style.color]="roleColor(user.role)"
+        >{{ initial(user.username) }}</div>
+        <div class="profile__id-text">
+          <div class="profile__name">{{ user.username }}</div>
+          <span
+            class="badge"
+            [style.color]="roleColor(user.role)"
+            [style.background]="roleColor(user.role) + '1a'"
+            [style.border-color]="roleColor(user.role) + '55'"
+          >
+            <span class="badge__dot" [style.background]="roleColor(user.role)"></span>
+            {{ roleLabel(user.role) }}
+          </span>
+        </div>
+      </div>
+
+      <dl class="profile__fields">
+        <div class="field">
+          <dt>Email</dt>
+          <dd>{{ user.email }}</dd>
+        </div>
+        <div class="field">
+          <dt>Role</dt>
+          <dd>{{ roleLabel(user.role) }}</dd>
+        </div>
+        <div class="field">
+          <dt>Member since</dt>
+          <dd>{{ user.createdAt | date: 'longDate' }}</dd>
+        </div>
+        <div class="field">
+          <dt>Account ID</dt>
+          <dd>#{{ user.id }}</dd>
+        </div>
+      </dl>
+
+      <button type="button" class="profile__logout" (click)="logout()">Log out</button>
+    </div>
+  } @else {
+    <p class="profile__state">Loading your profile…</p>
+  }
+</section>
