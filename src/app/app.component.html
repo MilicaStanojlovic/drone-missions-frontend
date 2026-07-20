@@ -1,29 +1,36 @@
 @if (auth.isLoggedIn) {
   <header class="nav">
     <div class="nav__inner">
-      <a class="nav__brand" routerLink="/">
-        <span class="nav__logo"></span>
-        <span class="nav__wordmark">DRONEMISSIONS</span>
-      </a>
+      <div class="nav__left">
+        <a class="nav__brand" routerLink="/">
+          <span class="nav__logo"></span>
+          <span class="nav__wordmark">DRONEMISSIONS</span>
+        </a>
 
-      <nav class="nav__links">
-        <a
-          routerLink="/missions"
-          routerLinkActive="nav__link--active"
-          [routerLinkActiveOptions]="{ exact: true }"
-          class="nav__link"
-        >Marketplace</a>
-
-        @if (auth.isDesigner) {
-          <a routerLink="/missions/mine" routerLinkActive="nav__link--active" class="nav__link">My Missions</a>
-          <a routerLink="/missions/new" class="nav__cta">+ New Mission</a>
-        }
-      </nav>
+        <nav class="nav__links">
+          @if (auth.isDesigner) {
+            <a routerLink="/missions/mine" routerLinkActive="nav__link--active" class="nav__link">My Missions</a>
+            <a routerLink="/missions/new" routerLinkActive="nav__link--active" class="nav__link">New Mission</a>
+          }
+          @if (auth.isPilot) {
+            <a
+              routerLink="/missions"
+              routerLinkActive="nav__link--active"
+              [routerLinkActiveOptions]="{ exact: true }"
+              class="nav__link"
+            >Browse</a>
+          }
+        </nav>
+      </div>
 
       <div class="nav__account">
-        @if (auth.role) {
-          <span class="nav__role">{{ auth.role }}</span>
-        }
+        <a class="nav__chip" routerLink="/profile" routerLinkActive="nav__chip--active" title="View your profile">
+          <span class="nav__chip-dot" [style.background]="roleColor"></span>
+          <span class="nav__chip-text">
+            <span class="nav__chip-name">{{ (auth.profile$ | async)?.username || 'Account' }}</span>
+            <span class="nav__chip-role">{{ roleLabel }}</span>
+          </span>
+        </a>
         <button type="button" class="nav__logout" (click)="logout()">Log out</button>
       </div>
     </div>
@@ -33,3 +40,5 @@
 <main class="app-main">
   <router-outlet />
 </main>
+
+<app-toast />

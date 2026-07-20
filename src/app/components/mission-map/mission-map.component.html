@@ -1,0 +1,134 @@
+<div class="map" [class]="cursorClass">
+  <svg
+    #svgEl
+    class="map__svg"
+    [attr.viewBox]="viewBox"
+    preserveAspectRatio="xMidYMid meet"
+    (pointerdown)="onSvgPointerDown($event)"
+    (pointermove)="onSvgPointerMove($event)"
+    (pointerup)="onSvgPointerUp()"
+    (pointercancel)="onSvgPointerUp()"
+    (wheel)="onWheel($event)"
+  >
+    <!-- basemap -->
+    <svg:g>
+      @for (s of basemap; track $index) {
+        @switch (s.t) {
+          @case ('rect') {
+            <svg:rect [attr.x]="s.x" [attr.y]="s.y" [attr.width]="s.width" [attr.height]="s.height"
+              [attr.fill]="s.fill" [attr.stroke]="s.stroke || null" [attr.stroke-width]="s.strokeWidth || null" [attr.rx]="s.rx || null" />
+          }
+          @case ('line') {
+            <svg:line [attr.x1]="s.x1" [attr.y1]="s.y1" [attr.x2]="s.x2" [attr.y2]="s.y2"
+              [attr.stroke]="s.stroke" [attr.stroke-width]="s.strokeWidth" />
+          }
+          @case ('polygon') {
+            <svg:polygon [attr.points]="s.points" [attr.fill]="s.fill" [attr.opacity]="s.opacity || null" />
+          }
+          @case ('polyline') {
+            <svg:polyline [attr.points]="s.points" fill="none" [attr.stroke]="s.stroke" [attr.stroke-width]="s.strokeWidth"
+              [attr.opacity]="s.opacity || null" stroke-linecap="round" stroke-linejoin="round" />
+          }
+          @case ('text') {
+            <svg:text [attr.x]="s.x" [attr.y]="s.y" text-anchor="middle" [attr.fill]="s.fill"
+              [attr.font-size]="s.fontSize" [attr.letter-spacing]="s.letterSpacing" [attr.font-family]="s.fontFamily">{{ s.text }}</svg:text>
+          }
+        }
+      }
+    </svg:g>
+
+    <!-- frame -->
+    <svg:rect x="1" y="1" width="998" height="638" fill="none" stroke="#d0d8e0" stroke-width="1.5" />
+
+    @if (!mini) {
+      <svg:circle cx="168" cy="520" r="58" fill="rgba(224,74,63,0.05)" stroke="rgba(224,74,63,0.45)" stroke-width="1.2" stroke-dasharray="5 5" />
+      <svg:text x="168" y="524" text-anchor="middle" fill="rgba(196,58,49,0.75)" font-size="10" letter-spacing="0.1em" font-family="IBM Plex Mono, monospace">RESTRICTED</svg:text>
+      <svg:g [attr.transform]="'translate(' + (view.x + view.w - 58) + ',' + (view.y + 58) + ') scale(' + hs + ')'">
+        <svg:circle r="20" fill="rgba(255,255,255,0.88)" stroke="#cfd8e0" />
+        <svg:path d="M0,-14 L5,4 L0,-1 L-5,4 Z" fill="#2f6bff" />
+        <svg:text x="0" y="-23" text-anchor="middle" fill="#5c6b7a" font-size="10" font-family="IBM Plex Mono, monospace">N</svg:text>
+      </svg:g>
+      <svg:g [attr.transform]="'translate(' + (view.x + 40 * hs) + ',' + (view.y + view.h - 34 * hs) + ') scale(' + hs + ')'">
+        <svg:line x1="0" y1="0" x2="100" y2="0" stroke="#6b7c8d" stroke-width="2" />
+        <svg:line x1="0" y1="-4" x2="0" y2="4" stroke="#6b7c8d" stroke-width="2" />
+        <svg:line x1="100" y1="-4" x2="100" y2="4" stroke="#6b7c8d" stroke-width="2" />
+        <svg:text x="50" y="-7" text-anchor="middle" fill="#6b7c8d" font-size="10" font-family="IBM Plex Mono, monospace">150 m</svg:text>
+      </svg:g>
+    }
+
+    <!-- geofence -->
+    @if (geofence) {
+      @if (geofence.type === 'circle') {
+        <svg:circle [attr.cx]="geofence.cx" [attr.cy]="geofence.cy" [attr.r]="geofence.r"
+          fill="rgba(109,94,240,0.08)" stroke="#6d5ef0" [attr.stroke-width]="1.7 * hs" [attr.stroke-dasharray]="zoneDash" />
+        @if (!mini) {
+          <svg:text [attr.x]="geofence.cx" [attr.y]="geofence.cy - geofence.r + 18 * hs" text-anchor="middle"
+            fill="#6d5ef0" [attr.font-size]="11 * hs" letter-spacing="0.12em" font-family="IBM Plex Mono, monospace" opacity="0.9">FLIGHT ZONE</svg:text>
+        }
+        @if (showHandles) {
+          <svg:circle [attr.cx]="geofence.cx" [attr.cy]="geofence.cy" [attr.r]="6 * hs" fill="#fff" stroke="#6d5ef0"
+            [attr.stroke-width]="2 * hs" class="handle" (pointerdown)="onZonePointerDown('zone-center', 0, $event)" />
+          <svg:circle [attr.cx]="geofence.cx + geofence.r" [attr.cy]="geofence.cy" [attr.r]="6 * hs" fill="#6d5ef0" stroke="#fff"
+            [attr.stroke-width]="2 * hs" class="handle handle--ew" (pointerdown)="onZonePointerDown('zone-radius', 0, $event)" />
+        }
+      } @else {
+        <svg:polygon [attr.points]="polygonPoints(geofence)" fill="rgba(109,94,240,0.08)" stroke="#6d5ef0"
+          [attr.stroke-width]="1.7 * hs" [attr.stroke-dasharray]="zoneDash" stroke-linejoin="round" />
+        @if (!mini) {
+          <svg:text [attr.x]="zoneLabelPos().x" [attr.y]="zoneLabelPos().y" text-anchor="middle" fill="#6d5ef0"
+            [attr.font-size]="11 * hs" letter-spacing="0.12em" font-family="IBM Plex Mono, monospace" opacity="0.9">FLIGHT ZONE</svg:text>
+        }
+        @if (showHandles) {
+          @for (v of geofence.pts; track $index) {
+            <svg:circle [attr.cx]="v.x" [attr.cy]="v.y" [attr.r]="6 * hs" fill="#fff" stroke="#6d5ef0"
+              [attr.stroke-width]="2 * hs" class="handle" (pointerdown)="onZonePointerDown('zone-vertex', $index, $event)" />
+          }
+          <svg:circle [attr.cx]="zoneLabelPos().x" [attr.cy]="zoneLabelPos().y" [attr.r]="6 * hs" fill="#6d5ef0" stroke="#fff"
+            [attr.stroke-width]="2 * hs" class="handle" (pointerdown)="onZonePointerDown('zone-center', 0, $event)" />
+        }
+      }
+    }
+
+    <!-- flight path -->
+    @if (waypoints.length >= 2) {
+      <svg:polyline [attr.points]="pathPoints" fill="none" stroke="rgba(47,107,255,0.16)"
+        [attr.stroke-width]="pathWeight * 3.6 * hs" stroke-linejoin="round" stroke-linecap="round" />
+      <svg:polyline [attr.points]="pathPoints" fill="none" stroke="#ffffff"
+        [attr.stroke-width]="pathWeight * hs + 3.5 * hs" stroke-linejoin="round" stroke-linecap="round" opacity="0.75" />
+      <svg:polyline [attr.points]="pathPoints" fill="none" stroke="#2f6bff"
+        [attr.stroke-width]="pathWeight * hs" stroke-linejoin="round" stroke-linecap="round"
+        [attr.stroke-dasharray]="(10 * hs) + ' ' + (6 * hs)" [class.map__path--anim]="animatePath" />
+    }
+
+    <!-- waypoint nodes -->
+    @for (p of waypoints; track $index) {
+      <svg:g [attr.transform]="'translate(' + p.x + ',' + p.y + ')'"
+        [class.map__node--drag]="editable && mode === 'select'" (pointerdown)="onNodePointerDown($index, $event)">
+        <svg:circle [attr.r]="(mini ? 7 : 12) * hs" fill="#ffffff" [attr.stroke]="nodeColor(p, $index)"
+          [attr.stroke-width]="(mini ? 2 : 2.5) * hs" class="map__node-halo" />
+        @if (!mini) {
+          <svg:text x="0" [attr.y]="4 * hs" text-anchor="middle" [attr.fill]="nodeColor(p, $index)"
+            [attr.font-size]="11 * hs" font-weight="600" font-family="IBM Plex Mono, monospace" class="map__node-num">{{ $index + 1 }}</svg:text>
+        }
+        @if (editable && mode === 'select' && selectedIdx === $index) {
+          <svg:g [attr.transform]="'translate(' + (17 * hs) + ',' + (-17 * hs) + ') scale(' + hs + ')'"
+            class="map__del" (pointerdown)="removeWaypoint($index, $event)">
+            <svg:circle r="9" fill="#e04a3f" stroke="#fff" stroke-width="1.5" />
+            <svg:path d="M-3,-3 L3,3 M3,-3 L-3,3" stroke="#fff" stroke-width="1.7" stroke-linecap="round" />
+          </svg:g>
+        }
+      </svg:g>
+    }
+  </svg>
+
+  @if (editable && !mini) {
+    <div class="map__legend">
+      <span class="map__legend-swatch"></span> Flight zone — keep waypoints inside
+    </div>
+    <div class="map__zoom">
+      <button type="button" (click)="zoomIn()" title="Zoom in">+</button>
+      <button type="button" (click)="zoomOut()" title="Zoom out">−</button>
+      <button type="button" (click)="zoomReset()" title="Reset view">⤢</button>
+    </div>
+  }
+</div>

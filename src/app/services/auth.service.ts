@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
-import { map } from 'rxjs/operators';
+import { BehaviorSubject, Observable } from 'rxjs';
+import { map, tap } from 'rxjs/operators';
 
 import { LoginPayload, RegisterPayload, UserResponse, UserRole } from '../models/user.model';
 
@@ -14,7 +14,14 @@ import { LoginPayload, RegisterPayload, UserResponse, UserRole } from '../models
 export class AuthService {
   private readonly http = inject(HttpClient);
   private readonly baseUrl = 'http://localhost:8085/api/v1/auth';
+  /** Profile lives under /users, not /auth (UserController is @RequestMapping("/api/v1/users")). */
+  private readonly usersUrl = 'http://localhost:8085/api/v1/users';
   private readonly tokenKey = 'dm_token';
+
+  /** The current user's profile, cached for the topbar. Null when logged out
+   *  or not yet loaded; populated by login() and loadProfile(). */
+  private readonly profileSubject = new BehaviorSubject<UserResponse | null>(null);
+  readonly profile$ = this.profileSubject.asObservable();
 
   register(payload: RegisterPayload): Observable<UserResponse> {
     return this.http.post<UserResponse>(`${this.baseUrl}/register`, payload);
@@ -35,13 +42,29 @@ export class AuthService {
           if (token) {
             this.storeToken(token);
           }
-          return response.body as UserResponse;
+          const profile = response.body as UserResponse;
+          this.profileSubject.next(profile);
+          return profile;
         })
       );
   }
 
   me(): Observable<UserResponse> {
-    return this.http.get<UserResponse>(`${this.baseUrl}/me`);
+    return this.http
+      .get<UserResponse>(`${this.usersUrl}/me`)
+      .pipe(tap((profile) => this.profileSubject.next(profile)));
+  }
+
+  /** Fetch and cache the profile if logged in and not already loaded (e.g. after
+   *  a page reload where only the token survives). Safe to call repeatedly. */
+  loadProfile(): void {
+    if (this.isLoggedIn && !this.profileSubject.value) {
+      this.me().subscribe({ error: () => {} });
+    }
+  }
+
+  get profile(): UserResponse | null {
+    return this.profileSubject.value;
   }
 
   storeToken(token: string): void {
@@ -84,6 +107,7 @@ export class AuthService {
 
   logout(): void {
     localStorage.removeItem(this.tokenKey);
+    this.profileSubject.next(null);
   }
 
   /**

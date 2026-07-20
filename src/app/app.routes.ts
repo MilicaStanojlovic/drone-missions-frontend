@@ -5,11 +5,13 @@ import { MissionDetailComponent } from './components/mission-detail/mission-deta
 import { MissionFormComponent } from './components/mission-form/mission-form.component';
 import { LoginComponent } from './components/login/login.component';
 import { RegisterComponent } from './components/register/register.component';
-import { authGuard, designerGuard, homeRedirectGuard } from './guards/auth.guard';
+import { LandingComponent } from './components/landing/landing.component';
+import { ProfileComponent } from './components/profile/profile.component';
+import { authGuard, designerGuard, landingGuard } from './guards/auth.guard';
 
 export const routes: Routes = [
-  // Role-based landing: designers -> their missions, pilots -> marketplace.
-  { path: '', canActivate: [homeRedirectGuard], children: [] },
+  // Public landing; logged-in users are redirected to their role home by the guard.
+  { path: '', component: LandingComponent, canActivate: [landingGuard] },
   { path: 'login', component: LoginComponent },
   { path: 'register', component: RegisterComponent },
 
@@ -26,6 +28,8 @@ export const routes: Routes = [
   { path: 'missions/new', component: MissionFormComponent, canActivate: [authGuard, designerGuard] },
   { path: 'missions/:id/edit', component: MissionFormComponent, canActivate: [authGuard, designerGuard] },
   { path: 'missions/:id', component: MissionDetailComponent, canActivate: [authGuard] },
+
+  { path: 'profile', component: ProfileComponent, canActivate: [authGuard] },
 
   { path: '**', redirectTo: '' }
 ];

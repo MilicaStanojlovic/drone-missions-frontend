@@ -1,6 +1,6 @@
 import { Component, inject } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
 import { AuthService } from '../../services/auth.service';
 import { UserRole } from '../../models/user.model';
@@ -13,6 +13,7 @@ import { UserRole } from '../../models/user.model';
 })
 export class RegisterComponent {
   private readonly fb = inject(FormBuilder);
+  private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly auth = inject(AuthService);
 
@@ -28,6 +29,14 @@ export class RegisterComponent {
     // the backend rejects a register without it (@NotNull UserRole role).
     role: ['' as UserRole | '', [Validators.required]]
   });
+
+  constructor() {
+    // The landing page links here with ?role=DESIGNER|PILOT to prefill the choice.
+    const role = this.route.snapshot.queryParamMap.get('role');
+    if (role === 'DESIGNER' || role === 'PILOT') {
+      this.form.controls.role.setValue(role);
+    }
+  }
 
   submit(): void {
     if (this.form.invalid) {
