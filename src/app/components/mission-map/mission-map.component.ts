@@ -1,266 +1,250 @@
 import {
+  AfterViewInit,
   Component,
   ElementRef,
   EventEmitter,
   Input,
   OnChanges,
+  OnDestroy,
   Output,
   SimpleChanges,
   ViewChild
 } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import * as L from 'leaflet';
 
-import { Geofence, Waypoint } from '../../models/mission-plan.model';
-import { BasemapShape, generateBasemap } from '../../util/basemap';
-import {
-  EX,
-  MAX_VIEW_W,
-  MIN_VIEW_W,
-  View,
-  clampToZone,
-  clampView,
-  defaultView,
-  inZone,
-  zoneCentroid
-} from '../../util/plan-geometry';
+import { Geofence, LatLng } from '../../models/mission.model';
+import { DEFAULT_CENTER, DEFAULT_ZOOM, clampToZone, distanceMeters, inZone } from '../../util/geo';
 
-type DragKind = 'pan' | 'node' | 'zone-center' | 'zone-radius' | 'zone-vertex';
-interface Drag {
-  kind: DragKind;
-  idx: number;
-  sx?: number;
-  sy?: number;
-  view?: View;
-  start?: Waypoint;
-  zone?: Geofence;
-}
+const ZONE_COLOR = '#6d5ef0';
 
 /**
- * The SVG flight map. Renders a deterministic procedural basemap plus the flight
- * zone, path and numbered waypoints. In `editable` mode it supports add / drag /
- * delete of waypoints, dragging the flight zone, and zoom/pan; it is a controlled
- * component — it emits `waypointsChange` / `geofenceChange` and expects the parent
- * to feed the new values back in. Read-only otherwise; `mini` for card thumbnails.
+ * The flight map, on Leaflet (OpenStreetMap tiles, real lat/lng). Controlled
+ * component: emits `waypointsChange` / `geofenceChange` and expects the parent to
+ * feed the new values back. In `editable` + `mode='add'` a map click appends a
+ * waypoint; in `mode='select'` markers drag (right-click removes) and the flight
+ * zone gets drag handles. Read-only otherwise (still pannable/zoomable).
  */
 @Component({
   selector: 'app-mission-map',
-  imports: [CommonModule],
-  templateUrl: './mission-map.component.html',
-  styleUrl: './mission-map.component.css'
+  imports: [],
+  template: `<div #mapEl class="map"></div>`,
+  styles: [
+    `
+      :host { display: block; width: 100%; height: 100%; }
+      .map { width: 100%; height: 100%; background: #eef1ec; }
+    `
+  ]
 })
-export class MissionMapComponent implements OnChanges {
-  @Input() waypoints: Waypoint[] = [];
+export class MissionMapComponent implements AfterViewInit, OnChanges, OnDestroy {
+  @Input() waypoints: LatLng[] = [];
   @Input() geofence: Geofence | null = null;
   @Input() editable = false;
   @Input() mode: 'add' | 'select' | 'pan' = 'add';
-  @Input() seed = 'seed';
-  @Input() mini = false;
-  @Input() animatePath = true;
 
-  @Output() waypointsChange = new EventEmitter<Waypoint[]>();
+  @Output() waypointsChange = new EventEmitter<LatLng[]>();
   @Output() geofenceChange = new EventEmitter<Geofence>();
-  @Output() cursorMove = new EventEmitter<Waypoint>();
   @Output() outOfZone = new EventEmitter<void>();
 
-  @ViewChild('svgEl') private svgRef?: ElementRef<SVGSVGElement>;
+  @ViewChild('mapEl', { static: true }) private mapEl!: ElementRef<HTMLDivElement>;
 
-  basemap: BasemapShape[] = [];
-  view: View = defaultView();
-  selectedIdx = -1;
-  private drag: Drag | null = null;
+  private map?: L.Map;
+  private readonly plan = L.layerGroup();
+  private pathLine?: L.Polyline;
+  private zoneShape?: L.Circle | L.Polygon;
+  private markers: L.Marker[] = [];
+  private fitted = false;
+
+  ngAfterViewInit(): void {
+    this.map = L.map(this.mapEl.nativeElement, { center: [DEFAULT_CENTER.lat, DEFAULT_CENTER.lng], zoom: DEFAULT_ZOOM });
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '© OpenStreetMap contributors'
+    }).addTo(this.map);
+    this.plan.addTo(this.map);
+    this.map.on('click', (e: L.LeafletMouseEvent) => this.onMapClick(e));
+    setTimeout(() => this.map?.invalidateSize(), 0);
+    this.render();
+  }
 
   ngOnChanges(changes: SimpleChanges): void {
-    if (changes['seed'] || changes['mini']) {
-      this.basemap = generateBasemap(this.seed, this.mini);
+    if (this.map && (changes['waypoints'] || changes['geofence'] || changes['mode'] || changes['editable'])) {
+      this.render();
     }
   }
 
-  // ---- derived values ----
-  get viewBox(): string {
-    return `${this.view.x} ${this.view.y} ${this.view.w} ${this.view.h}`;
-  }
-  /** World-units-per-screen-unit factor; scales stroke widths/handles at zoom. */
-  get hs(): number {
-    return this.view.w / 1000;
-  }
-  get pathPoints(): string {
-    return this.waypoints.map((p) => `${p.x},${p.y}`).join(' ');
-  }
-  /** Flight-path stroke weight in world units (thinner on mini thumbnails). */
-  get pathWeight(): number {
-    return this.mini ? 2 : 3;
-  }
-  polygonPoints(z: Geofence): string {
-    return z.type === 'polygon' ? z.pts.map((p) => `${p.x},${p.y}`).join(' ') : '';
-  }
-  get zoneDash(): string {
-    return `${9 * this.hs} ${7 * this.hs}`;
-  }
-  get showHandles(): boolean {
-    return this.editable && this.mode === 'select';
-  }
-  get cursorClass(): string {
-    if (!this.editable) {
-      return 'is-static';
-    }
-    return this.mode === 'pan' ? 'is-pan' : this.mode === 'add' ? 'is-add' : 'is-select';
+  ngOnDestroy(): void {
+    this.map?.remove();
   }
 
-  nodeColor(p: Waypoint, i: number): string {
-    if (this.geofence && !inZone(p, this.geofence)) {
-      return '#e04a3f';
-    }
-    return i === 0 ? '#12a06a' : '#2f6bff';
-  }
-
-  zoneLabelPos(): Waypoint {
-    return this.geofence ? zoneCentroid(this.geofence) : { x: 500, y: 320 };
-  }
-
-  // ---- pointer interaction (editable only) ----
-  private worldCoords(e: PointerEvent | WheelEvent): Waypoint {
-    const el = this.svgRef?.nativeElement;
-    if (!el) {
-      return { x: 0, y: 0 };
-    }
-    const rect = el.getBoundingClientRect();
-    const v = this.view;
-    let x = v.x + ((e.clientX - rect.left) / rect.width) * v.w;
-    let y = v.y + ((e.clientY - rect.top) / rect.height) * v.h;
-    x = Math.max(EX.x0, Math.min(EX.x1, x));
-    y = Math.max(EX.y0, Math.min(EX.y1, y));
-    return { x: Math.round(x), y: Math.round(y) };
-  }
-
-  onSvgPointerDown(e: PointerEvent): void {
-    if (!this.editable) {
+  // ---- interaction ----
+  private onMapClick(e: L.LeafletMouseEvent): void {
+    if (!this.editable || this.mode !== 'add') {
       return;
     }
-    const p = this.worldCoords(e);
-    this.svgRef?.nativeElement.setPointerCapture(e.pointerId);
-    if (this.mode === 'pan') {
-      this.drag = { kind: 'pan', idx: 0, sx: e.clientX, sy: e.clientY, view: { ...this.view } };
+    const p: LatLng = { lat: e.latlng.lat, lng: e.latlng.lng };
+    if (!inZone(p, this.geofence)) {
+      this.outOfZone.emit();
       return;
     }
-    if (this.mode === 'add') {
-      if (!inZone(p, this.geofence)) {
-        this.outOfZone.emit();
-        return;
+    this.waypointsChange.emit([...this.waypoints, p]);
+  }
+
+  private currentWaypoints(): LatLng[] {
+    return this.markers.map((m) => ({ lat: m.getLatLng().lat, lng: m.getLatLng().lng }));
+  }
+
+  // ---- rendering ----
+  private render(): void {
+    if (!this.map) {
+      return;
+    }
+    this.plan.clearLayers();
+    this.markers = [];
+    this.pathLine = undefined;
+    this.zoneShape = undefined;
+
+    this.renderZone();
+
+    if (this.waypoints.length >= 2) {
+      this.pathLine = L.polyline(
+        this.waypoints.map((p) => [p.lat, p.lng] as [number, number]),
+        { color: '#2f6bff', weight: 3, opacity: 0.9, dashArray: '8 6' }
+      );
+      this.plan.addLayer(this.pathLine);
+    }
+
+    this.waypoints.forEach((wp, i) => this.renderWaypoint(wp, i));
+
+    if (!this.fitted) {
+      this.fitToPlan();
+    }
+  }
+
+  private renderWaypoint(wp: LatLng, i: number): void {
+    const outside = this.geofence != null && !inZone(wp, this.geofence);
+    const color = outside ? '#e04a3f' : i === 0 ? '#12a06a' : '#2f6bff';
+    const draggable = this.editable && this.mode === 'select';
+    const marker = L.marker([wp.lat, wp.lng], {
+      draggable,
+      icon: L.divIcon({
+        className: '',
+        html:
+          `<div style="width:26px;height:26px;border-radius:50%;background:#fff;border:2.5px solid ${color};` +
+          `display:flex;align-items:center;justify-content:center;font:600 12px 'IBM Plex Mono',monospace;` +
+          `color:${color};box-shadow:0 1px 3px rgba(20,35,55,.3)">${i + 1}</div>`,
+        iconSize: [26, 26],
+        iconAnchor: [13, 13]
+      })
+    });
+    if (draggable) {
+      marker.on('drag', () => this.pathLine?.setLatLngs(this.markers.map((m) => m.getLatLng())));
+      marker.on('dragend', () => {
+        const next = this.currentWaypoints().map((p) => clampToZone(p, this.geofence) ?? p);
+        this.waypointsChange.emit(next);
+      });
+      marker.on('contextmenu', () => this.waypointsChange.emit(this.waypoints.filter((_, idx) => idx !== i)));
+    }
+    this.markers.push(marker);
+    this.plan.addLayer(marker);
+  }
+
+  private renderZone(): void {
+    const z = this.geofence;
+    if (!z) {
+      return;
+    }
+    const style: L.PathOptions = {
+      color: ZONE_COLOR,
+      weight: 2,
+      dashArray: '8 6',
+      fillColor: ZONE_COLOR,
+      fillOpacity: 0.08
+    };
+    if (z.type === 'CIRCLE') {
+      this.zoneShape = L.circle([z.center.lat, z.center.lng], { radius: z.radiusMeters, ...style });
+      this.plan.addLayer(this.zoneShape);
+      if (this.editable && this.mode === 'select') {
+        this.renderCircleHandles(z);
       }
-      const next = [...this.waypoints, p];
-      this.selectedIdx = next.length - 1;
-      this.waypointsChange.emit(next);
-      return;
-    }
-    // select
-    this.selectedIdx = -1;
-  }
-
-  onNodePointerDown(i: number, e: PointerEvent): void {
-    if (!this.editable || this.mode !== 'select') {
-      return;
-    }
-    e.stopPropagation();
-    this.svgRef?.nativeElement.setPointerCapture(e.pointerId);
-    this.selectedIdx = i;
-    this.drag = { kind: 'node', idx: i };
-  }
-
-  onZonePointerDown(kind: DragKind, idx: number, e: PointerEvent): void {
-    if (!this.editable || this.mode !== 'select' || !this.geofence) {
-      return;
-    }
-    e.stopPropagation();
-    this.svgRef?.nativeElement.setPointerCapture(e.pointerId);
-    this.drag = { kind, idx, start: this.worldCoords(e), zone: structuredClone(this.geofence) };
-  }
-
-  onSvgPointerMove(e: PointerEvent): void {
-    if (!this.editable) {
-      return;
-    }
-    const p = this.worldCoords(e);
-    this.cursorMove.emit(p);
-    const d = this.drag;
-    if (!d) {
-      return;
-    }
-    if (d.kind === 'pan' && d.view && d.sx != null && d.sy != null) {
-      const rect = this.svgRef!.nativeElement.getBoundingClientRect();
-      const v = d.view;
-      const dx = ((e.clientX - d.sx) / rect.width) * v.w;
-      const dy = ((e.clientY - d.sy) / rect.height) * v.h;
-      this.view = clampView({ x: v.x - dx, y: v.y - dy, w: v.w, h: v.h });
-      return;
-    }
-    if (d.kind === 'node') {
-      const cp = clampToZone(p, this.geofence);
-      if (!cp) {
-        return;
+    } else {
+      this.zoneShape = L.polygon(z.points.map((p) => [p.lat, p.lng] as [number, number]), style);
+      this.plan.addLayer(this.zoneShape);
+      if (this.editable && this.mode === 'select') {
+        this.renderPolygonHandles(z);
       }
-      this.waypointsChange.emit(this.waypoints.map((w, i) => (i === d.idx ? cp : w)));
+    }
+  }
+
+  private handleIcon(filled: boolean): L.DivIcon {
+    const bg = filled ? ZONE_COLOR : '#fff';
+    const border = filled ? '#fff' : ZONE_COLOR;
+    return L.divIcon({
+      className: '',
+      html: `<div style="width:14px;height:14px;border-radius:50%;background:${bg};border:2px solid ${border};box-shadow:0 1px 2px rgba(20,35,55,.3)"></div>`,
+      iconSize: [14, 14],
+      iconAnchor: [7, 7]
+    });
+  }
+
+  private renderCircleHandles(z: Extract<Geofence, { type: 'CIRCLE' }>): void {
+    const center = L.marker([z.center.lat, z.center.lng], { draggable: true, icon: this.handleIcon(true) });
+    // radius handle placed due east of the centre
+    const edge = { lat: z.center.lat, lng: z.center.lng + z.radiusMeters / (111_320 * Math.cos((z.center.lat * Math.PI) / 180)) };
+    const radius = L.marker([edge.lat, edge.lng], { draggable: true, icon: this.handleIcon(false) });
+
+    center.on('drag', () => {
+      const c = center.getLatLng();
+      (this.zoneShape as L.Circle).setLatLng(c);
+    });
+    center.on('dragend', () => {
+      const c = center.getLatLng();
+      this.geofenceChange.emit({ type: 'CIRCLE', center: { lat: c.lat, lng: c.lng }, radiusMeters: z.radiusMeters });
+    });
+    radius.on('drag', () => {
+      const c = (this.zoneShape as L.Circle).getLatLng();
+      (this.zoneShape as L.Circle).setRadius(Math.max(50, distanceMeters({ lat: c.lat, lng: c.lng }, radius.getLatLng())));
+    });
+    radius.on('dragend', () => {
+      const c = (this.zoneShape as L.Circle).getLatLng();
+      const r = Math.max(50, Math.round(distanceMeters({ lat: c.lat, lng: c.lng }, radius.getLatLng())));
+      this.geofenceChange.emit({ type: 'CIRCLE', center: { lat: c.lat, lng: c.lng }, radiusMeters: r });
+    });
+    this.plan.addLayer(center);
+    this.plan.addLayer(radius);
+  }
+
+  private renderPolygonHandles(z: Extract<Geofence, { type: 'POLYGON' }>): void {
+    z.points.forEach((pt, i) => {
+      const handle = L.marker([pt.lat, pt.lng], { draggable: true, icon: this.handleIcon(false) });
+      handle.on('drag', () => {
+        const pts = z.points.map((p, idx) => (idx === i ? handle.getLatLng() : L.latLng(p.lat, p.lng)));
+        (this.zoneShape as L.Polygon).setLatLngs(pts);
+      });
+      handle.on('dragend', () => {
+        const g = handle.getLatLng();
+        const points = z.points.map((p, idx) => (idx === i ? { lat: g.lat, lng: g.lng } : p));
+        this.geofenceChange.emit({ type: 'POLYGON', points });
+      });
+      this.plan.addLayer(handle);
+    });
+  }
+
+  private fitToPlan(): void {
+    if (!this.map) {
       return;
     }
-    if (d.zone) {
-      this.dragZone(d, p);
+    const pts: L.LatLngExpression[] = this.waypoints.map((p) => [p.lat, p.lng]);
+    if (this.geofence?.type === 'CIRCLE') {
+      pts.push([this.geofence.center.lat, this.geofence.center.lng]);
+    } else if (this.geofence?.type === 'POLYGON') {
+      this.geofence.points.forEach((p) => pts.push([p.lat, p.lng]));
     }
-  }
-
-  private dragZone(d: Drag, p: Waypoint): void {
-    const z = d.zone!;
-    if (d.kind === 'zone-center') {
-      if (z.type === 'circle') {
-        this.geofenceChange.emit({ ...z, cx: p.x, cy: p.y });
-      } else if (d.start) {
-        const dx = p.x - d.start.x;
-        const dy = p.y - d.start.y;
-        this.geofenceChange.emit({
-          type: 'polygon',
-          pts: z.pts.map((q) => ({ x: Math.round(q.x + dx), y: Math.round(q.y + dy) }))
-        });
-      }
-    } else if (d.kind === 'zone-radius' && z.type === 'circle') {
-      this.geofenceChange.emit({ ...z, r: Math.max(70, Math.round(Math.hypot(p.x - z.cx, p.y - z.cy))) });
-    } else if (d.kind === 'zone-vertex' && z.type === 'polygon') {
-      this.geofenceChange.emit({ type: 'polygon', pts: z.pts.map((q, i) => (i === d.idx ? p : q)) });
+    if (pts.length === 1) {
+      this.map.setView(pts[0], 14);
+      this.fitted = true;
+    } else if (pts.length > 1) {
+      this.map.fitBounds(L.latLngBounds(pts).pad(0.25));
+      this.fitted = true;
     }
-  }
-
-  onSvgPointerUp(): void {
-    this.drag = null;
-  }
-
-  onWheel(e: WheelEvent): void {
-    if (!this.editable) {
-      return;
-    }
-    e.preventDefault();
-    const p = this.worldCoords(e);
-    this.zoomAround(e.deltaY > 0 ? 1.12 : 0.9, p.x, p.y);
-  }
-
-  removeWaypoint(i: number, e: Event): void {
-    e.stopPropagation();
-    this.selectedIdx = -1;
-    this.waypointsChange.emit(this.waypoints.filter((_, idx) => idx !== i));
-  }
-
-  private zoomAround(factor: number, fx: number, fy: number): void {
-    const v = this.view;
-    const nw = Math.max(MIN_VIEW_W, Math.min(MAX_VIEW_W, v.w * factor));
-    const nh = nw * 0.64;
-    const nx = fx - (fx - v.x) * (nw / v.w);
-    const ny = fy - (fy - v.y) * (nh / v.h);
-    this.view = clampView({ x: nx, y: ny, w: nw, h: nh });
-  }
-
-  zoomIn(): void {
-    this.zoomAround(0.82, this.view.x + this.view.w / 2, this.view.y + this.view.h / 2);
-  }
-  zoomOut(): void {
-    this.zoomAround(1.22, this.view.x + this.view.w / 2, this.view.y + this.view.h / 2);
-  }
-  zoomReset(): void {
-    this.view = defaultView();
   }
 }

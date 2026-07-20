@@ -80,14 +80,7 @@
       @for (m of visibleMissions; track m.id) {
         <a class="card" [routerLink]="['/missions', m.id]">
           <div class="card__thumb">
-            <app-mission-map
-              class="card__map"
-              [seed]="'m' + m.id"
-              [mini]="true"
-              [waypoints]="waypointsFor(m.id)"
-              [geofence]="geofenceFor(m.id)"
-              [animatePath]="false"
-            />
+            <app-route-preview class="card__map" [waypoints]="m.waypoints ?? []" [geofence]="m.geofence ?? null" />
             <span
               class="badge"
               [style.color]="statusColors[m.status]"
@@ -100,8 +93,8 @@
           </div>
           <div class="card__body">
             <div class="card__title">{{ m.name }}</div>
-            @if (locationFor(m.id)) {
-              <div class="card__location">{{ locationFor(m.id) }}</div>
+            @if (m.location) {
+              <div class="card__location">{{ m.location }}</div>
             }
             <div class="card__meta">
               <div class="card__meta-item">
@@ -110,7 +103,7 @@
               </div>
               <div class="card__meta-item">
                 <div class="card__meta-label">Path</div>
-                <div class="card__meta-value">{{ pathFor(m.id) }}</div>
+                <div class="card__meta-value">{{ pathFor(m) }}</div>
               </div>
             </div>
             <div class="card__foot">

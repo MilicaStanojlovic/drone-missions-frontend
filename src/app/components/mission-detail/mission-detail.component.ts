@@ -3,20 +3,20 @@ import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
 import {
+  Geofence,
+  LatLng,
   Mission,
   MISSION_LIFECYCLE,
   MISSION_STATUS_COLORS,
   MISSION_STATUS_LABELS
 } from '../../models/mission.model';
-import { Geofence, MissionPlan, Waypoint } from '../../models/mission-plan.model';
 import { MissionService } from '../../services/mission.service';
-import { MissionPlanService } from '../../services/mission-plan.service';
 import { BidService, Bid } from '../../services/bid.service';
 import { AuthService } from '../../services/auth.service';
 import { ToastService } from '../../services/toast.service';
 import { MissionMapComponent } from '../mission-map/mission-map.component';
 import { ConfirmDialogComponent } from '../confirm-dialog/confirm-dialog.component';
-import { distanceText, durationText } from '../../util/plan-geometry';
+import { distanceText, durationText } from '../../util/geo';
 
 interface TimelineStep {
   label: string;
@@ -41,7 +41,6 @@ export class MissionDetailComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly missionService = inject(MissionService);
-  private readonly planService = inject(MissionPlanService);
   private readonly bidService = inject(BidService);
   private readonly toast = inject(ToastService);
   readonly auth = inject(AuthService);
@@ -52,7 +51,6 @@ export class MissionDetailComponent implements OnInit {
   loading = true;
   error = false;
   mission: Mission | null = null;
-  plan: MissionPlan | null = null;
   bids: Bid[] = [];
 
   pendingDelete = false;
@@ -68,7 +66,6 @@ export class MissionDetailComponent implements OnInit {
     this.missionService.getById(id).subscribe({
       next: (mission) => {
         this.mission = mission;
-        this.plan = this.planService.get(id);
         this.bids = this.bidService.list(id);
         this.loading = false;
       },
@@ -83,11 +80,11 @@ export class MissionDetailComponent implements OnInit {
   get isOwner(): boolean {
     return this.auth.isDesigner && !!this.mission && this.mission.userId === this.auth.userId;
   }
-  get waypoints(): Waypoint[] {
-    return this.plan?.waypoints ?? [];
+  get waypoints(): LatLng[] {
+    return this.mission?.waypoints ?? [];
   }
   get geofence(): Geofence | null {
-    return this.plan?.geofence ?? null;
+    return this.mission?.geofence ?? null;
   }
   get pathText(): string {
     return distanceText(this.waypoints);
@@ -104,7 +101,7 @@ export class MissionDetailComponent implements OnInit {
     return `${fmt(this.mission?.startTime)} – ${fmt(this.mission?.endTime)}`;
   }
   get deadlineText(): string {
-    const d = this.plan?.biddingDeadline;
+    const d = this.mission?.biddingDeadline;
     return d ? new Date(d + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'No deadline';
   }
   get bidCountText(): string {
@@ -183,7 +180,6 @@ export class MissionDetailComponent implements OnInit {
     }
     this.missionService.delete(mission.id).subscribe({
       next: () => {
-        this.planService.remove(mission.id);
         this.toast.show('Mission deleted');
         this.router.navigate(['/missions/mine']);
       },
