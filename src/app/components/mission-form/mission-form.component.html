@@ -17,16 +17,24 @@
           id="name"
           type="text"
           formControlName="name"
-          maxlength="200"
+          [attr.maxlength]="maxName"
           placeholder="e.g. Coastal survey — sector 4"
           [class.field__input--invalid]="form.controls.name.invalid && form.controls.name.touched"
         />
-        @if (form.controls.name.touched && form.controls.name.hasError('required')) {
-          <p class="field__error">Name is required.</p>
-        }
-        @if (form.controls.name.hasError('maxlength')) {
-          <p class="field__error">Name must be 200 characters or fewer.</p>
-        }
+        <div class="field__meta">
+          <div class="field__errors">
+            @if (form.controls.name.touched && form.controls.name.hasError('required')) {
+              <p class="field__error">Name is required.</p>
+            } @else if (form.controls.name.touched && form.controls.name.hasError('blank')) {
+              <p class="field__error">Name can't be only spaces.</p>
+            } @else if (form.controls.name.hasError('maxlength')) {
+              <p class="field__error">Name must be {{ maxName }} characters or fewer.</p>
+            }
+          </div>
+          <span class="field__count" [class.field__count--over]="nameLength >= maxName">
+            {{ nameLength }}/{{ maxName }}
+          </span>
+        </div>
       </div>
 
       <!-- Description -->
@@ -36,25 +44,56 @@
           id="description"
           rows="4"
           formControlName="description"
+          [attr.maxlength]="maxDescription"
           placeholder="Describe the mission objective, area, and constraints…"
           [class.field__input--invalid]="form.controls.description.invalid && form.controls.description.touched"
         ></textarea>
-        @if (form.controls.description.touched && form.controls.description.hasError('required')) {
-          <p class="field__error">Description is required.</p>
-        }
+        <div class="field__meta">
+          <div class="field__errors">
+            @if (form.controls.description.touched && form.controls.description.hasError('required')) {
+              <p class="field__error">Description is required.</p>
+            } @else if (form.controls.description.touched && form.controls.description.hasError('blank')) {
+              <p class="field__error">Description can't be only spaces.</p>
+            } @else if (form.controls.description.hasError('maxlength')) {
+              <p class="field__error">Description must be {{ maxDescription }} characters or fewer.</p>
+            }
+          </div>
+          <span class="field__count" [class.field__count--over]="descriptionLength >= maxDescription">
+            {{ descriptionLength }}/{{ maxDescription }}
+          </span>
+        </div>
       </div>
 
       <!-- Times -->
       <div class="field-row">
         <div class="field">
-          <label for="startTime">Start time</label>
-          <input id="startTime" type="datetime-local" formControlName="startTime" />
+          <label for="startTime">Start time <span class="field__req">*</span></label>
+          <input
+            id="startTime"
+            type="datetime-local"
+            formControlName="startTime"
+            [class.field__input--invalid]="form.controls.startTime.invalid && form.controls.startTime.touched"
+          />
+          @if (form.controls.startTime.touched && form.controls.startTime.hasError('required')) {
+            <p class="field__error">Start time is required.</p>
+          }
         </div>
         <div class="field">
-          <label for="endTime">End time</label>
-          <input id="endTime" type="datetime-local" formControlName="endTime" />
+          <label for="endTime">End time <span class="field__req">*</span></label>
+          <input
+            id="endTime"
+            type="datetime-local"
+            formControlName="endTime"
+            [class.field__input--invalid]="(form.controls.endTime.invalid || form.hasError('endBeforeStart')) && form.controls.endTime.touched"
+          />
+          @if (form.controls.endTime.touched && form.controls.endTime.hasError('required')) {
+            <p class="field__error">End time is required.</p>
+          }
         </div>
       </div>
+      @if (form.hasError('endBeforeStart') && form.controls.endTime.touched) {
+        <p class="field__error">End time can't be before the start time.</p>
+      }
 
       @if (saveError) {
         <p class="form-card__error">{{ saveError }}</p>

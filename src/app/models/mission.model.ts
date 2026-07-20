@@ -30,6 +30,27 @@ export const MISSION_STATUS_LABELS: Record<MissionStatus, string> = {
   CANCELLED: 'Cancelled'
 };
 
+/** Accent colour per status — lifted from the DroneMissions design system. */
+export const MISSION_STATUS_COLORS: Record<MissionStatus, string> = {
+  DRAFT: '#64748b',
+  PUBLISHED: '#0e9bb5',
+  BIDDING: '#d9860a',
+  AWARDED: '#7c5cff',
+  IN_PROGRESS: '#2f6bff',
+  COMPLETED: '#12a06a',
+  CANCELLED: '#e04a3f'
+};
+
+/** The lifecycle order used by the status timeline (excludes CANCELLED). */
+export const MISSION_LIFECYCLE: readonly MissionStatus[] = [
+  'DRAFT',
+  'PUBLISHED',
+  'BIDDING',
+  'AWARDED',
+  'IN_PROGRESS',
+  'COMPLETED'
+];
+
 /**
  * Mirrors the backend `Mission` JPA entity. `Instant` fields are serialized as
  * ISO-8601 strings over JSON.
@@ -39,6 +60,9 @@ export interface Mission {
   name: string;
   description: string;
   status: MissionStatus;
+  /** Id of the user who created (owns) the mission. Set server-side from the
+   *  authenticated principal — used client-side to gate edit/delete to the owner. */
+  userId: number;
   startTime?: string;
   endTime?: string;
   createdAt: string;
@@ -46,8 +70,8 @@ export interface Mission {
 }
 
 /**
- * Payload for creating/updating a mission. The backend assigns `id` and the
- * `@CreationTimestamp` / `@UpdateTimestamp` fields, so they are omitted from
- * the client-supplied data.
+ * Payload for creating/updating a mission. The backend assigns `id`, `userId`
+ * (from the authenticated principal) and the `@CreationTimestamp` /
+ * `@UpdateTimestamp` fields, so they are omitted from the client-supplied data.
  */
-export type MissionPayload = Omit<Mission, 'id' | 'createdAt' | 'updatedAt'>;
+export type MissionPayload = Omit<Mission, 'id' | 'userId' | 'createdAt' | 'updatedAt'>;
