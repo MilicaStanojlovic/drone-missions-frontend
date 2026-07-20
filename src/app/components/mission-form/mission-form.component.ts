@@ -60,8 +60,8 @@ export class MissionFormComponent implements OnInit {
     {
       name: ['', [Validators.required, notBlank, Validators.maxLength(this.maxName)]],
       description: ['', [Validators.required, notBlank, Validators.maxLength(this.maxDescription)]],
-      startTime: [''],
-      endTime: ['']
+      startTime: ['', [Validators.required]],
+      endTime: ['', [Validators.required]]
     },
     { validators: endAfterStart }
   );

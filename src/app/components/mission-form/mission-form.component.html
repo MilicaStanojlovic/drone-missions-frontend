@@ -67,17 +67,28 @@
       <!-- Times -->
       <div class="field-row">
         <div class="field">
-          <label for="startTime">Start time</label>
-          <input id="startTime" type="datetime-local" formControlName="startTime" />
+          <label for="startTime">Start time <span class="field__req">*</span></label>
+          <input
+            id="startTime"
+            type="datetime-local"
+            formControlName="startTime"
+            [class.field__input--invalid]="form.controls.startTime.invalid && form.controls.startTime.touched"
+          />
+          @if (form.controls.startTime.touched && form.controls.startTime.hasError('required')) {
+            <p class="field__error">Start time is required.</p>
+          }
         </div>
         <div class="field">
-          <label for="endTime">End time</label>
+          <label for="endTime">End time <span class="field__req">*</span></label>
           <input
             id="endTime"
             type="datetime-local"
             formControlName="endTime"
-            [class.field__input--invalid]="form.hasError('endBeforeStart') && form.controls.endTime.touched"
+            [class.field__input--invalid]="(form.controls.endTime.invalid || form.hasError('endBeforeStart')) && form.controls.endTime.touched"
           />
+          @if (form.controls.endTime.touched && form.controls.endTime.hasError('required')) {
+            <p class="field__error">End time is required.</p>
+          }
         </div>
       </div>
       @if (form.hasError('endBeforeStart') && form.controls.endTime.touched) {
