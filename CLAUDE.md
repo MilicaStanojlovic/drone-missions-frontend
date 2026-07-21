@@ -16,7 +16,7 @@ File map (under `src/app/`):
 - `models/` — `mission.model.ts` (`Mission`, `MissionStatus` + status consts, `LatLng`, `Geofence`, `MissionPayload`), `user.model.ts` (`UserRole`, `UserResponse`, `RegisterPayload`, `LoginPayload`).
 - `services/` — `auth.service.ts`, `mission.service.ts`, `bid.service.ts` (client-only), `toast.service.ts`, `auth.interceptor.ts` (functional `HttpInterceptorFn`).
 - `guards/auth.guard.ts` — exports `authGuard`, `designerGuard`, `landingGuard` (functional `CanActivateFn`s).
-- `components/` — `landing`, `login`, `register`, `profile`, `mission-list`, `mission-detail`, `mission-form`, `mission-map` (Leaflet), `route-preview` (pure SVG, no Leaflet), `confirm-dialog`, `toast`.
+- `components/` — `landing`, `login`, `register`, `profile`, `mission-list`, `mission-detail`, `mission-form`, `mission-map` (Leaflet — interactive in the editor/detail, and a static `[interactive]="false"` thumbnail on list cards), `confirm-dialog`, `toast`.
 - `util/geo.ts` — framework-free geo helpers (haversine distance/duration, centroid, geofence build/clamp, in-zone tests); `DEFAULT_CENTER` / `DEFAULT_ZOOM`.
 
 The Spring backend is expected at `http://localhost:8085`; the frontend fails gracefully (loading/error states) when it is down.
@@ -52,10 +52,17 @@ Standalone-component architecture (no `NgModule`). Key wiring:
 
 ## Conventions
 
+- **Never surface raw IDs to the user.** Database/entity identifiers (`user.id`, `mission.id`, `userId`, etc.) are for wiring routes and API calls only — do **not** render them in any user-facing page (no "Account ID", no "#123" labels, no ID columns). Use human-meaningful fields instead (name, username, email, status). IDs may live in URLs and `[routerLink]` params, but never in visible text.
 - Component selector prefix is `app` (e.g. `app-root`), enforced by `angular.json`.
 - TypeScript runs in `strict` mode with additional strictness: `noImplicitOverride`, `noPropertyAccessFromIndexSignature` (index-signature properties must use bracket access), `noImplicitReturns`, `noFallthroughCasesInSwitch`. Angular `strictTemplates` is on.
 - Production build enforces bundle budgets: 500 kB initial (warn) / 1 MB (error), and 4 kB / 8 kB per component stylesheet — keep an eye on these when adding dependencies.
 - Static assets go in `public/` (served at root).
+
+## Design
+
+- The app's visual design is authored in **Claude Design** and imported through the **`claude_design` MCP** server (`https://api.anthropic.com/v1/design/mcp`; authenticate with `/design-login` before using its tools).
+- **Source of truth:** the design project is `DroneMissions` — `https://claude.ai/design/p/bfa48adc-abf3-48a1-8976-6b1d2a992da8?file=DroneMissions.dc.html`. The canvas file to implement is **`DroneMissions.dc.html`**.
+- When implementing or updating the UI, import from that design project via the MCP and translate `DroneMissions.dc.html` into the standalone Angular components — keep the existing component/style structure and conventions above (design tokens, colors, and spacing come from the canvas, not ad-hoc values).
 
 ---
 

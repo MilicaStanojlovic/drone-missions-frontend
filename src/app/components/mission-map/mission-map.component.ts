@@ -27,11 +27,13 @@ const ZONE_COLOR = '#6d5ef0';
 @Component({
   selector: 'app-mission-map',
   imports: [],
-  template: `<div #mapEl class="map"></div>`,
+  template: `<div #mapEl class="map" [class.map--static]="!interactive"></div>`,
   styles: [
     `
       :host { display: block; width: 100%; height: 100%; }
       .map { width: 100%; height: 100%; background: #eef1ec; }
+      /* Static thumbnail: purely visual, let clicks fall through to the card link. */
+      .map--static { pointer-events: none; }
     `
   ]
 })
@@ -40,6 +42,8 @@ export class MissionMapComponent implements AfterViewInit, OnChanges, OnDestroy 
   @Input() geofence: Geofence | null = null;
   @Input() editable = false;
   @Input() mode: 'add' | 'select' | 'pan' = 'add';
+  /** When false the map is a static thumbnail: no pan/zoom/controls, clicks pass through. */
+  @Input() interactive = true;
 
   @Output() waypointsChange = new EventEmitter<LatLng[]>();
   @Output() geofenceChange = new EventEmitter<Geofence>();
@@ -55,7 +59,21 @@ export class MissionMapComponent implements AfterViewInit, OnChanges, OnDestroy 
   private fitted = false;
 
   ngAfterViewInit(): void {
-    this.map = L.map(this.mapEl.nativeElement, { center: [DEFAULT_CENTER.lat, DEFAULT_CENTER.lng], zoom: DEFAULT_ZOOM });
+    const options: L.MapOptions = { center: [DEFAULT_CENTER.lat, DEFAULT_CENTER.lng], zoom: DEFAULT_ZOOM };
+    if (!this.interactive) {
+      // Static thumbnail — kill every interaction handler and chrome, keep just the tiles + route.
+      Object.assign(options, {
+        dragging: false,
+        scrollWheelZoom: false,
+        doubleClickZoom: false,
+        boxZoom: false,
+        touchZoom: false,
+        keyboard: false,
+        zoomControl: false,
+        attributionControl: false
+      });
+    }
+    this.map = L.map(this.mapEl.nativeElement, options);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 19,
       attribution: '© OpenStreetMap contributors'

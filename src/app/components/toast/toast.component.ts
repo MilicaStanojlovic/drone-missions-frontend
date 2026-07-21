@@ -19,7 +19,7 @@ import { ToastService } from '../../services/toast.service';
         left: 50%;
         bottom: 28px;
         transform: translateX(-50%);
-        z-index: 200;
+        z-index: 2100;
         background: #1b2732;
         color: #fff;
         font-family: 'Space Grotesk', system-ui, sans-serif;

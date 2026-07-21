@@ -11,7 +11,7 @@ import {
 import { MissionService } from '../../services/mission.service';
 import { AuthService } from '../../services/auth.service';
 import { BidService } from '../../services/bid.service';
-import { RoutePreviewComponent } from '../route-preview/route-preview.component';
+import { MissionMapComponent } from '../mission-map/mission-map.component';
 import { distanceText } from '../../util/geo';
 
 interface StatTile {
@@ -28,7 +28,7 @@ interface StatTile {
  */
 @Component({
   selector: 'app-mission-list',
-  imports: [CommonModule, RouterLink, RoutePreviewComponent],
+  imports: [CommonModule, RouterLink, MissionMapComponent],
   templateUrl: './mission-list.component.html',
   styleUrl: './mission-list.component.css'
 })
