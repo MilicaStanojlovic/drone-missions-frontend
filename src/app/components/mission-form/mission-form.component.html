@@ -12,7 +12,7 @@
         <button type="button" class="btn btn--soft" (click)="cancel()">← Back</button>
         <div>
           <div class="editor__title">{{ isEdit ? 'Edit mission' : 'New mission' }}</div>
-          <div class="editor__subtitle">DRAG NODES TO ADJUST · CLICK MAP TO ADD</div>
+          <div class="editor__subtitle">CLICK MAP TO ADD · DRAG TO MOVE · RIGHT-CLICK A NODE TO REMOVE</div>
         </div>
       </div>
       <div class="editor__bar-actions">
@@ -41,8 +41,9 @@
           <div class="editor__zone">
             <span class="editor__zone-label">ZONE</span>
             <div class="seg">
-              <button type="button" class="seg__btn" [class.seg__btn--active]="geofence.type === 'circle'" (click)="setZone('circle')">◯ Circle</button>
-              <button type="button" class="seg__btn" [class.seg__btn--active]="geofence.type === 'polygon'" (click)="setZone('polygon')">⬡ Polygon</button>
+              <button type="button" class="seg__btn" [class.seg__btn--active]="zoneType === 'CIRCLE'" (click)="setZone('CIRCLE')">◯ Circle</button>
+              <button type="button" class="seg__btn" [class.seg__btn--active]="zoneType === 'POLYGON'" (click)="setZone('POLYGON')">⬡ Polygon</button>
+              <button type="button" class="seg__btn" [class.seg__btn--active]="zoneType === null" (click)="clearZone()">None</button>
             </div>
           </div>
           <div class="editor__tools-right">
@@ -56,12 +57,10 @@
             <app-mission-map
               [editable]="true"
               [mode]="mode"
-              [seed]="mapSeed"
               [waypoints]="waypoints"
               [geofence]="geofence"
               (waypointsChange)="onWaypoints($event)"
               (geofenceChange)="onGeofence($event)"
-              (cursorMove)="cursor = $event"
               (outOfZone)="onOutOfZone()"
             />
           </div>
@@ -71,7 +70,6 @@
           <div><span class="ro__label">WAYPOINTS</span> <span class="ro__value ro__value--accent">{{ waypointCount }}</span></div>
           <div><span class="ro__label">PATH</span> <span class="ro__value">{{ pathText }}</span></div>
           <div><span class="ro__label">EST. FLIGHT</span> <span class="ro__value">{{ flightText }}</span></div>
-          <div class="editor__cursor"><span class="ro__label">CURSOR</span> <span class="ro__value">{{ cursorText }}</span></div>
           @if (zoneWarn) {
             <div class="editor__warn">Waypoint must be inside the flight zone</div>
           }

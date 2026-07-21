@@ -10,18 +10,10 @@ import {
 } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 
-import { Mission, MissionPayload, MissionStatus } from '../../models/mission.model';
-import { Geofence, MissionPlan, Waypoint } from '../../models/mission-plan.model';
+import { Geofence, LatLng, Mission, MissionPayload, MissionStatus } from '../../models/mission.model';
 import { MissionService } from '../../services/mission.service';
-import { MissionPlanService } from '../../services/mission-plan.service';
 import { MissionMapComponent } from '../mission-map/mission-map.component';
-import {
-  distanceText,
-  durationText,
-  enclosingCircle,
-  zoneToCircle,
-  zoneToPolygon
-} from '../../util/plan-geometry';
+import { distanceText, durationText, enclosingCircle, zoneToCircle, zoneToPolygon } from '../../util/geo';
 
 /** Fails if the value is only whitespace (so " " doesn't satisfy `required`). */
 const notBlank: ValidatorFn = (control: AbstractControl): ValidationErrors | null => {
@@ -41,13 +33,15 @@ const endAfterStart: ValidatorFn = (group: AbstractControl): ValidationErrors | 
   return new Date(end).getTime() < new Date(start).getTime() ? { endBeforeStart: true } : null;
 };
 
-const DEFAULT_ZONE: Geofence = { type: 'circle', cx: 500, cy: 320, r: 300 };
+interface PlanSnapshot {
+  waypoints: LatLng[];
+  geofence: Geofence | null;
+}
 
 /**
- * The mission planner/editor: a map pane (plot & adjust the flight plan) beside a
- * brief form. The mission fields the backend owns (name/description/status/times)
- * are saved via MissionService; the plan (location, waypoints, zone, bidding
- * deadline) is saved client-side via MissionPlanService, keyed by the mission id.
+ * The mission planner/editor: a Leaflet map pane (plot & adjust the flight plan)
+ * beside a brief form. Everything — mission fields and the flight plan (location,
+ * waypoints, zone, bidding deadline) — is saved through MissionService to the backend.
  */
 @Component({
   selector: 'app-mission-form',
@@ -60,7 +54,6 @@ export class MissionFormComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly missionService = inject(MissionService);
-  private readonly planService = inject(MissionPlanService);
 
   missionId: number | null = null;
   private currentStatus: MissionStatus | null = null;
@@ -75,11 +68,10 @@ export class MissionFormComponent implements OnInit {
   readonly maxDescription = 2000;
 
   // ---- plan (map) state ----
-  waypoints: Waypoint[] = [];
-  geofence: Geofence = DEFAULT_ZONE;
+  waypoints: LatLng[] = [];
+  geofence: Geofence | null = null;
   mode: 'add' | 'select' | 'pan' = 'add';
-  cursor: Waypoint = { x: 0, y: 0 };
-  private history: { waypoints: Waypoint[]; geofence: Geofence }[] = [];
+  private history: PlanSnapshot[] = [];
 
   readonly form = this.fb.nonNullable.group(
     {
@@ -96,9 +88,6 @@ export class MissionFormComponent implements OnInit {
   get isEdit(): boolean {
     return this.missionId !== null;
   }
-  get mapSeed(): string {
-    return this.missionId !== null ? 'm' + this.missionId : 'new';
-  }
   get descriptionLength(): number {
     return this.form.controls.description.value.length;
   }
@@ -113,9 +102,8 @@ export class MissionFormComponent implements OnInit {
   get flightText(): string {
     return durationText(this.waypoints);
   }
-  get cursorText(): string {
-    const pad = (n: number) => `${Math.max(0, n)}`.padStart(4, '0');
-    return `${pad(this.cursor.x)} · ${pad(this.cursor.y)}`;
+  get zoneType(): 'CIRCLE' | 'POLYGON' | null {
+    return this.geofence?.type ?? null;
   }
   get hasTitle(): boolean {
     return this.form.controls.name.value.trim().length > 0;
@@ -136,21 +124,16 @@ export class MissionFormComponent implements OnInit {
     this.missionService.getById(id).subscribe({
       next: (mission) => {
         this.currentStatus = mission.status;
+        this.waypoints = mission.waypoints ?? [];
+        this.geofence = mission.geofence ?? null;
         this.form.patchValue({
           name: mission.name,
           description: mission.description,
+          location: mission.location ?? '',
           startDate: this.toDateInput(mission.startTime),
-          endDate: this.toDateInput(mission.endTime)
+          endDate: this.toDateInput(mission.endTime),
+          biddingDeadline: mission.biddingDeadline ?? ''
         });
-        const plan = this.planService.get(id);
-        if (plan) {
-          this.waypoints = plan.waypoints ?? [];
-          this.geofence = plan.geofence ?? enclosingCircle(this.waypoints);
-          this.form.patchValue({
-            location: plan.location ?? '',
-            biddingDeadline: plan.biddingDeadline ?? ''
-          });
-        }
       },
       error: (err) => {
         console.error('Failed to load mission', err);
@@ -160,16 +143,13 @@ export class MissionFormComponent implements OnInit {
   }
 
   // ---- map events ----
-  onWaypoints(next: Waypoint[]): void {
+  onWaypoints(next: LatLng[]): void {
     if (next.length !== this.waypoints.length) {
       this.pushHistory();
     }
     this.waypoints = next;
   }
   onGeofence(next: Geofence): void {
-    if (next.type !== this.geofence.type) {
-      this.pushHistory();
-    }
     this.geofence = next;
   }
   onOutOfZone(): void {
@@ -184,12 +164,21 @@ export class MissionFormComponent implements OnInit {
   setMode(mode: 'add' | 'select' | 'pan'): void {
     this.mode = mode;
   }
-  setZone(type: 'circle' | 'polygon'): void {
-    const next = type === 'circle' ? zoneToCircle(this.geofence) : zoneToPolygon(this.geofence);
-    if (next.type !== this.geofence.type) {
-      this.pushHistory();
-      this.geofence = next;
+  /** Circle/Polygon build (or convert) a flight zone that encloses the waypoints. */
+  setZone(type: 'CIRCLE' | 'POLYGON'): void {
+    if (!this.geofence && !this.waypoints.length) {
+      return; // nothing to enclose yet
     }
+    const base = this.geofence ?? enclosingCircle(this.waypoints);
+    this.pushHistory();
+    this.geofence = type === 'CIRCLE' ? zoneToCircle(base) : zoneToPolygon(base);
+  }
+  clearZone(): void {
+    if (!this.geofence) {
+      return;
+    }
+    this.pushHistory();
+    this.geofence = null;
   }
   undo(): void {
     const prev = this.history.pop();
@@ -199,11 +188,12 @@ export class MissionFormComponent implements OnInit {
     }
   }
   clear(): void {
-    if (!this.waypoints.length) {
+    if (!this.waypoints.length && !this.geofence) {
       return;
     }
     this.pushHistory();
     this.waypoints = [];
+    this.geofence = null;
   }
   private pushHistory(): void {
     this.history.push({ waypoints: this.waypoints, geofence: this.geofence });
@@ -232,7 +222,9 @@ export class MissionFormComponent implements OnInit {
   }
 
   cancel(): void {
-    this.router.navigate(this.isEdit && this.missionId !== null ? ['/missions', this.missionId] : ['/missions/mine']);
+    this.router.navigate(
+      this.isEdit && this.missionId !== null ? ['/missions', this.missionId] : ['/missions/mine']
+    );
   }
 
   private save(status: MissionStatus): void {
@@ -246,7 +238,11 @@ export class MissionFormComponent implements OnInit {
       description: raw.description.trim(),
       status,
       startTime: this.fromDateInput(raw.startDate),
-      endTime: this.fromDateInput(raw.endDate)
+      endTime: this.fromDateInput(raw.endDate),
+      location: raw.location.trim() || undefined,
+      biddingDeadline: raw.biddingDeadline || undefined,
+      waypoints: this.waypoints,
+      geofence: this.geofence
     };
 
     this.submitting = true;
@@ -258,26 +254,13 @@ export class MissionFormComponent implements OnInit {
         : this.missionService.create(payload);
 
     request$.subscribe({
-      next: (saved) => {
-        this.persistPlan(saved.id, raw.location, raw.biddingDeadline);
-        this.router.navigate(['/missions', saved.id]);
-      },
+      next: (saved) => this.router.navigate(['/missions', saved.id]),
       error: (err) => {
         console.error('Failed to save mission', err);
         this.saveError = 'Could not save the mission. Please try again.';
         this.submitting = false;
       }
     });
-  }
-
-  private persistPlan(id: number, location: string, biddingDeadline: string): void {
-    const plan: MissionPlan = {
-      location: location.trim() || undefined,
-      biddingDeadline: biddingDeadline || undefined,
-      waypoints: this.waypoints,
-      geofence: this.geofence
-    };
-    this.planService.save(id, plan);
   }
 
   /** ISO-8601 → `yyyy-MM-dd` for <input type="date">. */

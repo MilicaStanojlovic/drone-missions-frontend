@@ -10,11 +10,9 @@ import {
 } from '../../models/mission.model';
 import { MissionService } from '../../services/mission.service';
 import { AuthService } from '../../services/auth.service';
-import { MissionPlanService } from '../../services/mission-plan.service';
 import { BidService } from '../../services/bid.service';
-import { MissionMapComponent } from '../mission-map/mission-map.component';
-import { Geofence, MissionPlan, Waypoint } from '../../models/mission-plan.model';
-import { distanceText } from '../../util/plan-geometry';
+import { RoutePreviewComponent } from '../route-preview/route-preview.component';
+import { distanceText } from '../../util/geo';
 
 interface StatTile {
   label: string;
@@ -30,23 +28,18 @@ interface StatTile {
  */
 @Component({
   selector: 'app-mission-list',
-  imports: [CommonModule, RouterLink, MissionMapComponent],
+  imports: [CommonModule, RouterLink, RoutePreviewComponent],
   templateUrl: './mission-list.component.html',
   styleUrl: './mission-list.component.css'
 })
 export class MissionListComponent implements OnInit {
   private readonly missionService = inject(MissionService);
   private readonly route = inject(ActivatedRoute);
-  private readonly planService = inject(MissionPlanService);
   private readonly bidService = inject(BidService);
   readonly auth = inject(AuthService);
 
   readonly statusLabels = MISSION_STATUS_LABELS;
   readonly statusColors = MISSION_STATUS_COLORS;
-  /** Stable empty array for cards whose mission has no saved plan. */
-  readonly noWaypoints: Waypoint[] = [];
-  /** Locally-saved flight plans, by mission id (waypoints/location/zone). */
-  private plans: Record<number, MissionPlan | null> = {};
 
   mine = false;
   loading = true;
@@ -69,10 +62,6 @@ export class MissionListComponent implements OnInit {
     source.subscribe({
       next: (missions) => {
         this.missions = missions;
-        this.plans = {};
-        for (const m of missions) {
-          this.plans[m.id] = this.planService.get(m.id);
-        }
         this.loading = false;
       },
       error: () => {
@@ -82,18 +71,9 @@ export class MissionListComponent implements OnInit {
     });
   }
 
-  /** Card thumbnail data from the mission's saved plan (empty if none). */
-  waypointsFor(id: number): Waypoint[] {
-    return this.plans[id]?.waypoints ?? this.noWaypoints;
-  }
-  geofenceFor(id: number): Geofence | null {
-    return this.plans[id]?.geofence ?? null;
-  }
-  locationFor(id: number): string {
-    return this.plans[id]?.location ?? '';
-  }
-  pathFor(id: number): string {
-    const wps = this.plans[id]?.waypoints;
+  /** Path distance shown on a mission's card (— when it has no route). */
+  pathFor(mission: Mission): string {
+    const wps = mission.waypoints;
     return wps && wps.length > 1 ? distanceText(wps) : '—';
   }
 
