@@ -22,8 +22,8 @@
             <span class="badge__dot" [style.background]="statusColors[mission.status]"></span>
             {{ statusLabels[mission.status] }}
           </span>
-          @if (plan?.location) {
-            <span class="detail__loc">{{ plan?.location }}</span>
+          @if (mission.location) {
+            <span class="detail__loc">{{ mission.location }}</span>
           }
         </div>
         <h1 class="detail__title">{{ mission.name }}</h1>
@@ -59,7 +59,7 @@
       <div class="detail__main">
         <div class="detail__map">
           @if (waypoints.length) {
-            <app-mission-map [seed]="'m' + mission.id" [waypoints]="waypoints" [geofence]="geofence" [editable]="false" />
+            <app-mission-map [waypoints]="waypoints" [geofence]="geofence" [editable]="false" />
           } @else {
             <div class="detail__map-empty">No flight plan was saved for this mission.</div>
           }

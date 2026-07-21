@@ -4,13 +4,20 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project state
 
-Angular 19 application (Angular CLI 19.2.19) implementing the **Mission CRUD** feature (Milestone 0). Standalone components, no `NgModule`. The feature spans:
+Angular 19 application (Angular CLI 19.2.19), standalone components (no `NgModule`). It has grown past the original Mission-CRUD milestone into a small role-based marketplace app. Current feature set:
 
-- `src/app/models/mission.model.ts` — `Mission`, `MissionStatus`, `MISSION_STATUSES`, `MissionPayload`
-- `src/app/services/mission.service.ts` — HTTP CRUD against the backend
-- `src/app/components/mission-list/` — table with status badges + delete
-- `src/app/components/mission-detail/` — single-mission view
-- `src/app/components/mission-form/` — shared create/edit reactive form
+- **Auth** — JWT register / login / profile, with two roles (`DESIGNER` / `PILOT`) gating what you can do and see.
+- **Missions** — a marketplace (open missions for pilots) and a designer dashboard (own missions), plus a mission planner/editor with a **Leaflet** map (waypoints + circle/polygon geofence) and a role-aware detail view with a status timeline and read-only map.
+- **Bids** — a bids panel on the detail view (pilots place, designers award). **Client-only demo — no backend** (see the note under Backend integration).
+- **Toasts** — a single-toast notification bus mounted at app root.
+
+File map (under `src/app/`):
+
+- `models/` — `mission.model.ts` (`Mission`, `MissionStatus` + status consts, `LatLng`, `Geofence`, `MissionPayload`), `user.model.ts` (`UserRole`, `UserResponse`, `RegisterPayload`, `LoginPayload`).
+- `services/` — `auth.service.ts`, `mission.service.ts`, `bid.service.ts` (client-only), `toast.service.ts`, `auth.interceptor.ts` (functional `HttpInterceptorFn`).
+- `guards/auth.guard.ts` — exports `authGuard`, `designerGuard`, `landingGuard` (functional `CanActivateFn`s).
+- `components/` — `landing`, `login`, `register`, `profile`, `mission-list`, `mission-detail`, `mission-form`, `mission-map` (Leaflet), `route-preview` (pure SVG, no Leaflet), `confirm-dialog`, `toast`.
+- `util/geo.ts` — framework-free geo helpers (haversine distance/duration, centroid, geofence build/clamp, in-zone tests); `DEFAULT_CENTER` / `DEFAULT_ZOOM`.
 
 The Spring backend is expected at `http://localhost:8085`; the frontend fails gracefully (loading/error states) when it is down.
 
@@ -32,9 +39,16 @@ There is no lint target configured and no e2e framework installed.
 Standalone-component architecture (no `NgModule`). Key wiring:
 
 - `src/main.ts` → `bootstrapApplication(AppComponent, appConfig)` is the entry point.
-- `src/app/app.config.ts` → `appConfig` is where application-wide providers go. Currently `provideZoneChangeDetection({ eventCoalescing: true })`, `provideRouter(routes)`, and `provideHttpClient()`. Register global HTTP interceptors here (`provideHttpClient(withInterceptors([...]))`).
-- `src/app/app.routes.ts` → the router configuration (`routes`). Define lazy/eager routes here.
+- `src/app/app.config.ts` → `appConfig` is where application-wide providers go. Currently `provideZoneChangeDetection({ eventCoalescing: true })`, `provideRouter(routes)`, and `provideHttpClient(withInterceptors([authInterceptor]))` — the auth interceptor is already wired here. Register further global HTTP interceptors in the same `withInterceptors([...])` array.
+- `src/app/app.routes.ts` → the router configuration (`routes`), guard-protected (see the route table below). Define lazy/eager routes here.
 - Components declare their dependencies via the standalone `imports` array in the `@Component` decorator, not through modules.
+
+### Auth & security (how it actually works)
+
+- **Token:** the JWT is read from the **`Authorization` response header** of `POST /auth/login` (strip the `Bearer ` prefix) and stored in `localStorage` under the key **`dm_token`**. `AuthService.logout()` clears it.
+- **Outbound:** `authInterceptor` attaches `Authorization: Bearer <token>` to any request whose URL starts with `http://localhost:8085` when a token is present. On a **401** (except `/api/v1/auth/*` calls) it logs out and redirects to `/login`.
+- **Client-side claims:** `AuthService` decodes the JWT *payload* (base64url) to read `sub` (userId), `role`, and `exp` — `isLoggedIn` / `isDesigner` / `isPilot` derive from it. This is **not** a signature check; it's convenience only, the backend still validates.
+- **Profile:** cached in-memory via a `BehaviorSubject` (`profile$`); re-fetched from `GET /api/v1/users/me` once after a reload while logged in.
 
 ## Conventions
 
@@ -56,6 +70,7 @@ Conventions for extending the Mission feature (and shaping future features the s
 - The URL is currently a hard-coded `private readonly baseUrl` string in the service. If a second service needs the same host, promote the root (`http://localhost:8085/api/v1`) to `src/environments/environment.ts` (Angular's `ng generate environments`) rather than duplicating the literal.
 - **CORS / proxy:** the backend must allow origin `http://localhost:4200`, or add a `proxy.conf.json` and run `ng serve --proxy-config` so `/api` is same-origin. There is no proxy config yet.
 - Timestamps (`Instant`) cross the wire as ISO-8601 strings — keep them typed as `string` in models and convert at the edges (see the form's `datetime-local` helpers).
+- **Bids are client-only.** `BidService` has **no backend** — it persists to `localStorage` under the prefix `dm_bids_<missionId>`. Treat it as a demo/placeholder; if/when a real bids API lands, swap the storage calls for `HttpClient` and keep the same method shapes. Don't assume a `/bids` endpoint exists.
 
 ## 2. Service layer patterns
 
@@ -77,14 +92,21 @@ Conventions for extending the Mission feature (and shaping future features the s
 
 Feature routes are declared in `src/app/app.routes.ts`:
 
-| Path | Component | Purpose |
-|------|-----------|---------|
-| `''` | `MissionListComponent` | list |
-| `missions/new` | `MissionFormComponent` | create |
-| `missions/:id/edit` | `MissionFormComponent` | edit |
-| `missions/:id` | `MissionDetailComponent` | detail |
+| Path | Component | Guard / data |
+|------|-----------|--------------|
+| `''` | `LandingComponent` | `landingGuard` (logged-in → role home) |
+| `login` | `LoginComponent` | — |
+| `register` | `RegisterComponent` | — |
+| `missions` | `MissionListComponent` | `authGuard` (marketplace) |
+| `missions/mine` | `MissionListComponent` | `authGuard`, `data: { mine: true }` (dashboard) |
+| `missions/new` | `MissionFormComponent` | `authGuard`, `designerGuard` |
+| `missions/:id/edit` | `MissionFormComponent` | `authGuard`, `designerGuard` |
+| `missions/:id` | `MissionDetailComponent` | `authGuard` |
+| `profile` | `ProfileComponent` | `authGuard` |
+| `**` | → redirect to `''` | — |
 
-- **Order matters:** literal/segment routes (`missions/new`, `missions/:id/edit`) must precede the parametric `missions/:id`, or `new` is captured as an `:id`.
+- **Order matters:** literal/segment routes (`missions/new`, `missions/mine`, `missions/:id/edit`) must precede the parametric `missions/:id`, or `new`/`mine` is captured as an `:id`.
+- **Guards** (`src/app/guards/auth.guard.ts`, functional `CanActivateFn`s): `authGuard` requires a valid token (else → `/login`); `designerGuard` additionally requires the `DESIGNER` role (pilots → `/missions`); `landingGuard` bounces already-logged-in users off `''` to their role home (DESIGNER → `/missions/mine`, PILOT → `/missions`). `MissionListComponent` switches between marketplace and dashboard based on `route.data.mine`.
 - Navigate declaratively with `[routerLink]="['/missions', id]"` in templates; use `Router.navigate(...)` for post-action redirects (e.g. after save → detail, after delete → list).
 - Read params reactively with `route.paramMap.pipe(switchMap(...))` when the same component instance may be reused for different ids; `route.snapshot` is fine for read-once cases like the form.
 - As routes grow, split them into a `missions.routes.ts` and lazy-load with `loadChildren`.
@@ -93,8 +115,9 @@ Feature routes are declared in `src/app/app.routes.ts`:
 
 - All shared TypeScript types live in `src/app/models/` (one file per domain entity, e.g. `mission.model.ts`).
 - Keep the interface a faithful mirror of the backend entity; document serialization quirks in a comment (e.g. `Instant → ISO string`).
-- Express enums as **string-literal union types** (`MissionStatus`) plus a companion `readonly` array (`MISSION_STATUSES`) as the single source of truth for dropdowns — never re-list the values in a template.
-- Derive request DTOs from the entity with `Omit<>` (`MissionPayload = Omit<Mission, 'id' | 'createdAt' | 'updatedAt'>`) so server-owned fields can't leak into a create/update body.
+- Express enums as **string-literal union types** (`MissionStatus`) plus a companion `readonly` array (`MISSION_STATUSES`) as the single source of truth for dropdowns — never re-list the values in a template. `MissionStatus` is the 7-value lifecycle `DRAFT → PUBLISHED → BIDDING → AWARDED → IN_PROGRESS → COMPLETED`, plus `CANCELLED`. Companion consts carry the presentation and ordering: `MISSION_STATUS_LABELS`, `MISSION_STATUS_COLORS`, and `MISSION_LIFECYCLE` (the ordered path, excluding `CANCELLED`) — reuse these, don't hard-code labels/colors in templates.
+- `Mission` carries flight-plan fields beyond the CRUD basics: `location`, `startTime` / `endTime`, `biddingDeadline` (a `yyyy-MM-dd` date string), `waypoints` (`LatLng[]`), and `geofence` (a `Geofence` union — `CIRCLE` with `center`/`radiusMeters`, or `POLYGON` with `points`). All optional; the map components produce/consume them.
+- Derive request DTOs from the entity with `Omit<>` (`MissionPayload = Omit<Mission, 'id' | 'userId' | 'createdAt' | 'updatedAt'>`) so server-owned fields — including `userId`, set from the token server-side — can't leak into a create/update body.
 
 ## 6. Component patterns
 

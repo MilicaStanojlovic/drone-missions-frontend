@@ -51,9 +51,20 @@ export const MISSION_LIFECYCLE: readonly MissionStatus[] = [
   'COMPLETED'
 ];
 
+/** A geographic point (WGS84 degrees) — matches the backend `GeoPoint`. */
+export interface LatLng {
+  lat: number;
+  lng: number;
+}
+
+/** The mission's flight zone — matches the backend `Geofence` (radius in metres). */
+export type Geofence =
+  | { type: 'CIRCLE'; center: LatLng; radiusMeters: number }
+  | { type: 'POLYGON'; points: LatLng[] };
+
 /**
  * Mirrors the backend `Mission` JPA entity. `Instant` fields are serialized as
- * ISO-8601 strings over JSON.
+ * ISO-8601 strings over JSON; the flight-plan fields are now persisted server-side.
  */
 export interface Mission {
   id: number;
@@ -65,6 +76,12 @@ export interface Mission {
   userId: number;
   startTime?: string;
   endTime?: string;
+  // ---- flight plan (persisted on the backend) ----
+  location?: string;
+  /** ISO date `yyyy-MM-dd`. */
+  biddingDeadline?: string;
+  waypoints?: LatLng[];
+  geofence?: Geofence | null;
   createdAt: string;
   updatedAt: string;
 }
