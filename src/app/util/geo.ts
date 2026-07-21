@@ -6,9 +6,9 @@ import { Geofence, LatLng } from '../models/mission.model';
 
 type CircleZone = Extract<Geofence, { type: 'CIRCLE' }>;
 
-/** Default map view when a mission has no plan yet (San Francisco Bay Area). */
-export const DEFAULT_CENTER: LatLng = { lat: 37.66, lng: -122.35 };
-export const DEFAULT_ZOOM = 11;
+/** Default map view when a mission has no plan yet (Belgrade, Serbia). */
+export const DEFAULT_CENTER: LatLng = { lat: 44.7866, lng: 20.4489 };
+export const DEFAULT_ZOOM = 12;
 
 /** Assumed drone cruise speed for the flight-time estimate. */
 const CRUISE_MPS = 9;

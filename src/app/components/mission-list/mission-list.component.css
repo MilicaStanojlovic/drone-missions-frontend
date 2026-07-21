@@ -195,28 +195,6 @@
   inset: 0;
 }
 
-/* Placeholder until the mini-map lands (Step 4). */
-.card__thumb-ph {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background:
-    linear-gradient(rgba(40, 70, 100, 0.05) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(40, 70, 100, 0.05) 1px, transparent 1px),
-    linear-gradient(180deg, #eef2f6, #e7edf2);
-  background-size: 22px 22px, 22px 22px, auto;
-}
-
-.card__thumb-diamond {
-  width: 18px;
-  height: 18px;
-  transform: rotate(45deg);
-  border: 2px solid #c3ccd6;
-  border-radius: 3px;
-}
-
 .badge {
   position: absolute;
   top: 10px;

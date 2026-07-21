@@ -80,7 +80,7 @@
       @for (m of visibleMissions; track m.id) {
         <a class="card" [routerLink]="['/missions', m.id]">
           <div class="card__thumb">
-            <app-route-preview class="card__map" [waypoints]="m.waypoints ?? []" [geofence]="m.geofence ?? null" />
+            <app-mission-map class="card__map" [interactive]="false" [waypoints]="m.waypoints ?? []" [geofence]="m.geofence ?? null" />
             <span
               class="badge"
               [style.color]="statusColors[m.status]"
