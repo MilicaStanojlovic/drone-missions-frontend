@@ -1,5 +1,6 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { HttpErrorResponse } from '@angular/common/http';
 import {
   AbstractControl,
   FormBuilder,
@@ -232,6 +233,11 @@ export class MissionFormComponent implements OnInit {
       this.form.markAllAsTouched();
       return;
     }
+    if (this.waypoints.length < 2) {
+      this.saveError =
+        'Draw a flight path with at least 2 waypoints — a single point or an empty path can’t be saved.';
+      return;
+    }
     const raw = this.form.getRawValue();
     const payload: MissionPayload = {
       name: raw.name.trim(),
@@ -257,10 +263,35 @@ export class MissionFormComponent implements OnInit {
       next: (saved) => this.router.navigate(['/missions', saved.id]),
       error: (err) => {
         console.error('Failed to save mission', err);
-        this.saveError = 'Could not save the mission. Please try again.';
+        this.saveError = this.serverMessage(err) ?? 'Could not save the mission. Please try again.';
         this.submitting = false;
       }
     });
+  }
+
+  /**
+   * Pull a human message out of the backend's `{ data, status, message }` error body
+   * (data is a field→message map, e.g. `{ waypoints: 'a flight path needs at least 2 waypoints' }`),
+   * so server-side validation surfaces clearly instead of the generic fallback.
+   */
+  private serverMessage(err: unknown): string | null {
+    const body = err instanceof HttpErrorResponse ? err.error : null;
+    if (body && typeof body === 'object') {
+      const data = (body as { data?: unknown }).data;
+      if (data && typeof data === 'object') {
+        const messages = Object.values(data as Record<string, unknown>).filter(
+          (m): m is string => typeof m === 'string' && m.length > 0
+        );
+        if (messages.length) {
+          return messages.join(' ');
+        }
+      }
+      const message = (body as { message?: unknown }).message;
+      if (typeof message === 'string' && message.length > 0) {
+        return message;
+      }
+    }
+    return null;
   }
 
   /** ISO-8601 → `yyyy-MM-dd` for <input type="date">. */
