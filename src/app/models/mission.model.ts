@@ -74,6 +74,8 @@ export interface Mission {
   /** Id of the user who created (owns) the mission. Set server-side from the
    *  authenticated principal — used client-side to gate edit/delete to the owner. */
   userId: number;
+  /** Email of the mission's designer (owner), resolved server-side. */
+  designerEmail?: string;
   /** Id of the pilot whose bid was accepted; null until the mission is awarded. */
   awardedPilotId?: number | null;
   startTime?: string;
@@ -93,4 +95,4 @@ export interface Mission {
  * (from the authenticated principal) and the `@CreationTimestamp` /
  * `@UpdateTimestamp` fields, so they are omitted from the client-supplied data.
  */
-export type MissionPayload = Omit<Mission, 'id' | 'userId' | 'createdAt' | 'updatedAt'>;
+export type MissionPayload = Omit<Mission, 'id' | 'userId' | 'designerEmail' | 'createdAt' | 'updatedAt'>;

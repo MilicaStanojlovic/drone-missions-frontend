@@ -1,7 +1,7 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder } from '@angular/forms';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute, Params, Router, RouterLink } from '@angular/router';
 import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
 
 import {
@@ -37,6 +37,7 @@ interface StatTile {
 export class MissionListComponent implements OnInit {
   private readonly missionService = inject(MissionService);
   private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
   private readonly fb = inject(FormBuilder);
   readonly auth = inject(AuthService);
 
@@ -59,14 +60,51 @@ export class MissionListComponent implements OnInit {
     this.mine = this.route.snapshot.data['mine'] === true;
     // Re-query the feed as the pilot types/picks (debounced); the dashboard doesn't filter.
     if (!this.mine) {
+      // Seed the filters from the URL so returning to the feed (e.g. from a mission
+      // detail's Back button) restores whatever was applied. Done before subscribing
+      // so it doesn't fire an extra load — the load() below picks up the seeded values.
+      const qp = this.route.snapshot.queryParamMap;
+      this.filterForm.patchValue({
+        keyword: qp.get('keyword') ?? '',
+        location: qp.get('location') ?? '',
+        date: qp.get('date') ?? ''
+      });
       this.filterForm.valueChanges
         .pipe(
           debounceTime(300),
           distinctUntilChanged((a, b) => JSON.stringify(a) === JSON.stringify(b))
         )
-        .subscribe(() => this.load());
+        .subscribe(() => {
+          this.load();
+          this.syncUrl();
+        });
     }
     this.load();
+  }
+
+  /** The active filters as router query params (empty values omitted). */
+  filterParams(): Params {
+    const { keyword, location, date } = this.filterForm.getRawValue();
+    const params: Params = {};
+    if (keyword.trim()) {
+      params['keyword'] = keyword.trim();
+    }
+    if (location.trim()) {
+      params['location'] = location.trim();
+    }
+    if (date) {
+      params['date'] = date;
+    }
+    return params;
+  }
+
+  /** Mirror the current filters into the feed URL so a refresh/return keeps them. */
+  private syncUrl(): void {
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: this.filterParams(),
+      replaceUrl: true
+    });
   }
 
   private load(): void {

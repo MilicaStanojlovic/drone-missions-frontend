@@ -42,9 +42,19 @@ export class MissionService {
     return this.http.get<Mission[]>(`${this.baseUrl}/my-jobs`);
   }
 
+  /** The awarded pilot starts a mission (AWARDED → IN_PROGRESS). */
+  start(id: number): Observable<Mission> {
+    return this.http.post<Mission>(`${this.baseUrl}/${id}/start`, {});
+  }
+
   /** The awarded pilot marks a mission finished (IN_PROGRESS → COMPLETED). */
   complete(id: number): Observable<Mission> {
     return this.http.post<Mission>(`${this.baseUrl}/${id}/complete`, {});
+  }
+
+  /** The mission's creator cancels it (→ CANCELLED), rejecting any outstanding bids. */
+  cancel(id: number): Observable<Mission> {
+    return this.http.post<Mission>(`${this.baseUrl}/${id}/cancel`, {});
   }
 
   getById(id: number): Observable<Mission> {
