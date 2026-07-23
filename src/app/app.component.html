@@ -25,6 +25,9 @@
       </div>
 
       <div class="nav__account">
+        @if (auth.isPilot) {
+          <app-notification-bell />
+        }
         <a class="nav__chip" routerLink="/profile" routerLinkActive="nav__chip--active" title="View your profile">
           <span class="nav__chip-dot" [style.background]="roleColor"></span>
           <span class="nav__chip-text">
@@ -43,4 +46,3 @@
 </main>
 
 <app-toast />
-<app-finish-reminder />

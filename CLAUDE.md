@@ -9,7 +9,8 @@ Angular 19 application (Angular CLI 19.2.19), standalone components (no `NgModul
 - **Auth** — JWT register / login / profile, with two roles (`DESIGNER` / `PILOT`) gating what you can do and see.
 - **Missions** — a marketplace (open missions for pilots) and a designer dashboard (own missions), plus a mission planner/editor with a **Leaflet** map (waypoints + circle/polygon geofence) and a role-aware detail view with a status timeline and read-only map.
 - **Bids** — a real backend feature: pilots place/update/withdraw a bid (amount + optional message) from the detail view and see their history on `/my-bids`; designers see incoming bids and Accept one (rejects the rest, awards the mission).
-- **Completion** — after award, a mission auto-advances `AWARDED → IN_PROGRESS` once its start date arrives (computed lazily on read, no scheduler). The winning pilot marks it finished (`→ COMPLETED`) from the detail page; if the end date passes without confirmation, a `finish-reminder` popup nags them at app root.
+- **Completion** — after award, a mission auto-advances `AWARDED → IN_PROGRESS` once its start date arrives (computed lazily on read). The winning pilot marks it finished (`→ COMPLETED`) from the detail page.
+- **Notifications** — a bell + dropdown in the nav (pilot only) shows in-app notifications for bid **accepted / rejected** and **mission overdue**; clicking one marks it read and opens the mission. Backed by `/api/v1/notifications`; replaces the old finish-reminder popup. The backend also sends app-styled **emails** (new bid → designer; accepted/rejected/overdue → pilot).
 - **Toasts** — a single-toast notification bus mounted at app root.
 
 File map (under `src/app/`):
@@ -17,7 +18,7 @@ File map (under `src/app/`):
 - `models/` — `mission.model.ts` (`Mission`, `MissionStatus` + status consts, `LatLng`, `Geofence`, `MissionPayload`), `bid.model.ts` (`Bid`, `BidStatus` + status consts, `BidPayload`), `user.model.ts` (`UserRole`, `UserResponse`, `RegisterPayload`, `LoginPayload`).
 - `services/` — `auth.service.ts`, `mission.service.ts`, `bid.service.ts`, `toast.service.ts`, `auth.interceptor.ts` (functional `HttpInterceptorFn`).
 - `guards/auth.guard.ts` — exports `authGuard`, `designerGuard`, `pilotGuard`, `landingGuard` (functional `CanActivateFn`s).
-- `components/` — `landing`, `login`, `register`, `profile`, `mission-list`, `mission-detail`, `mission-form`, `my-bids` (pilot bid history), `finish-reminder` (overdue-mission popup at app root), `mission-map` (Leaflet — interactive in the editor/detail, and a static `[interactive]="false"` thumbnail on list cards), `confirm-dialog`, `toast`.
+- `components/` — `landing`, `login`, `register`, `profile`, `mission-list`, `mission-detail`, `mission-form`, `my-bids` (pilot bid history), `notification-bell` (nav bell + dropdown), `mission-map` (Leaflet — interactive in the editor/detail, and a static `[interactive]="false"` thumbnail on list cards), `confirm-dialog`, `toast`.
 - `util/geo.ts` — framework-free geo helpers (haversine distance/duration, centroid, geofence build/clamp, in-zone tests); `DEFAULT_CENTER` / `DEFAULT_ZOOM`.
 
 The Spring backend is expected at `http://localhost:8085`; the frontend fails gracefully (loading/error states) when it is down.

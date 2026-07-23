@@ -1,0 +1,50 @@
+<div class="bell">
+  <button
+    type="button"
+    class="bell__btn"
+    [class.bell__btn--active]="open"
+    (click)="toggle()"
+    aria-label="Notifications"
+  >
+    <span class="bell__icon" aria-hidden="true">&#128276;</span>
+    @if (unreadCount$ | async; as count) {
+      @if (count > 0) {
+        <span class="bell__badge">{{ count > 9 ? '9+' : count }}</span>
+      }
+    }
+  </button>
+
+  @if (open) {
+    <div class="bell__backdrop" (click)="close()"></div>
+    <div class="panel">
+      <div class="panel__head">
+        <span class="panel__title">Notifications</span>
+        @if ((unreadCount$ | async)) {
+          <button type="button" class="panel__mark" (click)="markAll()">Mark all read</button>
+        }
+      </div>
+
+      @if ((notifications$ | async); as items) {
+        @if (items.length === 0) {
+          <div class="panel__empty">You're all caught up.</div>
+        } @else {
+          <div class="panel__list">
+            @for (n of items; track n.id) {
+              <button type="button" class="note" [class.note--unread]="!n.read" (click)="onSelect(n)">
+                <span class="note__dot" [style.background]="colors[n.type]"></span>
+                <span class="note__body">
+                  <span class="note__title">{{ n.title }}</span>
+                  <span class="note__msg">{{ n.message }}</span>
+                  <span class="note__time">{{ timeAgo(n.createdAt) }}</span>
+                </span>
+                @if (!n.read) {
+                  <span class="note__unread" [style.background]="colors[n.type]"></span>
+                }
+              </button>
+            }
+          </div>
+        }
+      }
+    </div>
+  }
+</div>
