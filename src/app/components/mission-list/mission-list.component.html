@@ -44,17 +44,33 @@
         </button>
       </div>
       @if (tab === 'open') {
-        <div class="search">
-          <span class="search__icon" aria-hidden="true">⚲</span>
+        <form class="filters" [formGroup]="filterForm">
+          <div class="search">
+            <span class="search__icon" aria-hidden="true">⚲</span>
+            <input
+              class="search__input"
+              type="text"
+              formControlName="keyword"
+              placeholder="Search name or description…"
+            />
+          </div>
           <input
-            #searchInput
-            class="search__input"
+            class="filters__input"
             type="text"
-            placeholder="Search missions by name…"
-            [value]="search"
-            (input)="onSearch(searchInput.value)"
+            formControlName="location"
+            placeholder="Location…"
+            aria-label="Filter by location"
           />
-        </div>
+          <input
+            class="filters__input filters__date"
+            type="date"
+            formControlName="date"
+            aria-label="Flyable on date"
+          />
+          @if (hasActiveFilters) {
+            <button type="button" class="filters__clear" (click)="clearFilters()">Clear</button>
+          }
+        </form>
       }
     </div>
   }
@@ -67,12 +83,16 @@
   } @else if (visibleMissions.length === 0) {
     <div class="empty">
       <div class="empty__title">
-        {{ mine ? 'No missions yet' : (tab === 'mine' ? 'No bids yet' : 'No open missions') }}
+        @if (mine) { No missions yet }
+        @else if (tab === 'mine') { No bids yet }
+        @else if (hasActiveFilters) { No missions match your filters }
+        @else { No open missions }
       </div>
       <div class="empty__sub">
-        {{ mine
-          ? 'Create your first mission to start collecting bids.'
-          : (tab === 'mine' ? 'Missions you bid on will appear here.' : 'Check back soon for published missions.') }}
+        @if (mine) { Create your first mission to start collecting bids. }
+        @else if (tab === 'mine') { Missions you bid on will appear here. }
+        @else if (hasActiveFilters) { Try adjusting or clearing your filters. }
+        @else { Check back soon for published missions. }
       </div>
     </div>
   } @else {
