@@ -74,6 +74,8 @@ export interface Mission {
   /** Id of the user who created (owns) the mission. Set server-side from the
    *  authenticated principal — used client-side to gate edit/delete to the owner. */
   userId: number;
+  /** Id of the pilot whose bid was accepted; null until the mission is awarded. */
+  awardedPilotId?: number | null;
   startTime?: string;
   endTime?: string;
   // ---- flight plan (persisted on the backend) ----

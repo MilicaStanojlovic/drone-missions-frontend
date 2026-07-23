@@ -1,0 +1,54 @@
+<section class="page">
+  <header class="page__head">
+    <div>
+      <div class="page__eyebrow">PILOT</div>
+      <h1 class="page__title">My Bids</h1>
+    </div>
+  </header>
+
+  @if (loading) {
+    <p class="page__state">Loading your bids…</p>
+  } @else if (error) {
+    <p class="page__state page__state--error">Couldn't load your bids. Please try again.</p>
+  } @else if (bids.length === 0) {
+    <div class="empty">
+      <div class="empty__title">No bids yet</div>
+      <div class="empty__sub">Find a mission on the feed and place your first bid.</div>
+      <a routerLink="/missions" class="empty__cta">Browse missions</a>
+    </div>
+  } @else {
+    <div class="rows">
+      @for (b of bids; track b.id) {
+        <div class="row">
+          <div class="row__main">
+            <a class="row__mission" [routerLink]="['/missions', b.missionId]">{{ b.missionName }}</a>
+            @if (b.message) {
+              <div class="row__msg">“{{ b.message }}”</div>
+            }
+            <div class="row__date">Placed {{ b.createdAt | date: 'mediumDate' }}</div>
+          </div>
+          <div class="row__side">
+            <span
+              class="chip"
+              [style.color]="statusColors[b.status]"
+              [style.background]="statusColors[b.status] + '1a'"
+              [style.border-color]="statusColors[b.status] + '55'"
+            >
+              <span class="chip__dot" [style.background]="statusColors[b.status]"></span>
+              {{ statusLabels[b.status] }}
+            </span>
+            <div class="row__amount">${{ b.amount }}</div>
+            @if (b.status === 'PENDING') {
+              <button
+                type="button"
+                class="row__withdraw"
+                [disabled]="withdrawing === b.id"
+                (click)="withdraw(b)"
+              >{{ withdrawing === b.id ? 'Withdrawing…' : 'Withdraw' }}</button>
+            }
+          </div>
+        </div>
+      }
+    </div>
+  }
+</section>

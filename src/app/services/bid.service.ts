@@ -1,70 +1,40 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { Observable } from 'rxjs';
+
+import { Bid, BidPayload } from '../models/bid.model';
 
 /**
- * A single pilot's bid on a mission. Client-only demo data — the backend has no
- * bids yet, so these live in localStorage keyed by mission id. Swap this for a
- * real API when bidding is added server-side.
+ * Bids against the backend `/api/v1` bids API. Cold Observables — subscription
+ * (and therefore the HTTP call) is the caller's responsibility.
  */
-export interface Bid {
-  id: string;
-  pilotName: string;
-  amount: number;
-  createdAt: number;
-  status: 'pending' | 'accepted' | 'declined';
-}
-
 @Injectable({ providedIn: 'root' })
 export class BidService {
-  private readonly prefix = 'dm_bids_';
+  private readonly http = inject(HttpClient);
+  private readonly baseUrl = 'http://localhost:8085/api/v1';
 
-  list(missionId: number): Bid[] {
-    try {
-      const raw = localStorage.getItem(this.prefix + missionId);
-      const parsed = raw ? JSON.parse(raw) : [];
-      return Array.isArray(parsed) ? (parsed as Bid[]) : [];
-    } catch {
-      return [];
-    }
+  /** Place the caller's bid on a mission, or update their pending one. */
+  place(missionId: number, payload: BidPayload): Observable<Bid> {
+    return this.http.post<Bid>(`${this.baseUrl}/missions/${missionId}/bids`, payload);
   }
 
-  myBid(missionId: number, pilotName: string): Bid | undefined {
-    return this.list(missionId).find((b) => b.pilotName === pilotName);
+  /** The mission owner gets every bid; a pilot gets only their own (0/1). */
+  listForMission(missionId: number): Observable<Bid[]> {
+    return this.http.get<Bid[]>(`${this.baseUrl}/missions/${missionId}/bids`);
   }
 
-  /** Place or update the caller's bid; returns the full bid list. */
-  place(missionId: number, pilotName: string, amount: number): Bid[] {
-    const bids = this.list(missionId);
-    const mine = bids.find((b) => b.pilotName === pilotName);
-    if (mine) {
-      mine.amount = amount;
-      mine.createdAt = Date.now();
-      mine.status = 'pending';
-    } else {
-      bids.unshift({ id: this.genId(), pilotName, amount, createdAt: Date.now(), status: 'pending' });
-    }
-    this.write(missionId, bids);
-    return bids;
+  /** Every bid the calling pilot has placed, newest first. */
+  myBids(): Observable<Bid[]> {
+    return this.http.get<Bid[]>(`${this.baseUrl}/bids/my`);
   }
 
-  /** Accept one bid; decline the rest. Returns the updated list. */
-  award(missionId: number, bidId: string): Bid[] {
-    const bids = this.list(missionId).map((b) => ({
-      ...b,
-      status: (b.id === bidId ? 'accepted' : 'declined') as Bid['status']
-    }));
-    this.write(missionId, bids);
-    return bids;
+  /** Withdraw (delete) the caller's pending bid. */
+  withdraw(bidId: number): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}/bids/${bidId}`);
   }
 
-  private write(missionId: number, bids: Bid[]): void {
-    try {
-      localStorage.setItem(this.prefix + missionId, JSON.stringify(bids));
-    } catch {
-      /* best-effort */
-    }
-  }
-
-  private genId(): string {
-    return 'b' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  /** Accept one bid — rejects the rest and awards the mission to its pilot. */
+  accept(bidId: number): Observable<Bid> {
+    return this.http.post<Bid>(`${this.baseUrl}/bids/${bidId}/accept`, {});
   }
 }

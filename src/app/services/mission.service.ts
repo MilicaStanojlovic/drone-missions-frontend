@@ -37,6 +37,16 @@ export class MissionService {
     return this.http.get<Mission[]>(`${this.baseUrl}/my-missions`);
   }
 
+  /** The missions awarded to the current pilot ("my jobs"). */
+  getMyJobs(): Observable<Mission[]> {
+    return this.http.get<Mission[]>(`${this.baseUrl}/my-jobs`);
+  }
+
+  /** The awarded pilot marks a mission finished (IN_PROGRESS → COMPLETED). */
+  complete(id: number): Observable<Mission> {
+    return this.http.post<Mission>(`${this.baseUrl}/${id}/complete`, {});
+  }
+
   getById(id: number): Observable<Mission> {
     return this.http.get<Mission>(`${this.baseUrl}/${id}`);
   }

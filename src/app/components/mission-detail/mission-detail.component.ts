@@ -11,7 +11,8 @@ import {
   MISSION_STATUS_LABELS
 } from '../../models/mission.model';
 import { MissionService } from '../../services/mission.service';
-import { BidService, Bid } from '../../services/bid.service';
+import { BidService } from '../../services/bid.service';
+import { Bid } from '../../models/bid.model';
 import { AuthService } from '../../services/auth.service';
 import { ToastService } from '../../services/toast.service';
 import { MissionMapComponent } from '../mission-map/mission-map.component';
@@ -28,8 +29,9 @@ interface TimelineStep {
 
 /**
  * Role-aware mission detail: status timeline, read-only flight map, telemetry,
- * brief, and a bids panel (designer sees/awards bids; pilot places one — both
- * client-only for now). Owning designers get Edit / Delete.
+ * brief, and a bids panel backed by the bids API (designer sees and accepts
+ * bids; pilot places/updates/withdraws their own). Owning designers get
+ * Edit / Delete.
  */
 @Component({
   selector: 'app-mission-detail',
@@ -54,7 +56,12 @@ export class MissionDetailComponent implements OnInit {
   bids: Bid[] = [];
 
   pendingDelete = false;
+  pendingComplete = false;
   bidAmount = '';
+  bidMessage = '';
+  bidBusy = false;
+  /** The bid awaiting the designer's Accept confirmation, if any. */
+  pendingAccept: Bid | null = null;
 
   ngOnInit(): void {
     this.route.paramMap.subscribe((params) => this.load(Number(params.get('id'))));
@@ -66,8 +73,8 @@ export class MissionDetailComponent implements OnInit {
     this.missionService.getById(id).subscribe({
       next: (mission) => {
         this.mission = mission;
-        this.bids = this.bidService.list(id);
         this.loading = false;
+        this.loadBids(id);
       },
       error: () => {
         this.error = true;
@@ -76,9 +83,41 @@ export class MissionDetailComponent implements OnInit {
     });
   }
 
+  private loadBids(id: number): void {
+    this.bidService.listForMission(id).subscribe({
+      next: (bids) => (this.bids = bids),
+      error: (err) => console.error('Failed to load bids', err)
+    });
+  }
+
+  /** Re-fetch mission + bids in place (no full-page loading flash) after a bid action. */
+  private refresh(): void {
+    const id = this.mission?.id;
+    if (id == null) {
+      return;
+    }
+    this.missionService.getById(id).subscribe({
+      next: (mission) => (this.mission = mission),
+      error: (err) => console.error('Failed to refresh mission', err)
+    });
+    this.loadBids(id);
+  }
+
+  /** Pull a message out of the backend's `{ data, status, message }` error body. */
+  private serverMessage(err: unknown, fallback: string): string {
+    const body = (err as { error?: { message?: unknown } } | null)?.error;
+    return body && typeof body.message === 'string' && body.message.length > 0
+      ? body.message
+      : fallback;
+  }
+
   // ---- derived ----
   get isOwner(): boolean {
     return this.auth.isDesigner && !!this.mission && this.mission.userId === this.auth.userId;
+  }
+  /** The calling pilot won this mission. */
+  get isWinner(): boolean {
+    return this.auth.isPilot && !!this.mission && this.mission.awardedPilotId === this.auth.userId;
   }
   get waypoints(): LatLng[] {
     return this.mission?.waypoints ?? [];
@@ -108,7 +147,7 @@ export class MissionDetailComponent implements OnInit {
     return this.bids.length === 1 ? '1 bid' : `${this.bids.length} bids`;
   }
   get hasAward(): boolean {
-    return this.bids.some((b) => b.status === 'accepted');
+    return this.mission?.awardedPilotId != null || this.bids.some((b) => b.status === 'ACCEPTED');
   }
 
   get steps(): TimelineStep[] {
@@ -131,18 +170,16 @@ export class MissionDetailComponent implements OnInit {
     this.router.navigate([this.auth.isPilot ? '/missions' : '/missions/mine']);
   }
 
-  // ---- pilot bidding (client-only) ----
-  private get pilotName(): string {
-    return this.auth.profile?.username ?? 'You';
-  }
+  // ---- pilot bidding ----
+  /** The caller's own bid — for pilots the API returns only theirs (0/1 items). */
   get myBid(): Bid | undefined {
-    return this.mission ? this.bidService.myBid(this.mission.id, this.pilotName) : undefined;
+    return this.auth.isPilot ? this.bids[0] : undefined;
   }
   get canBid(): boolean {
-    return this.auth.isPilot && !this.hasAward && ['PUBLISHED', 'BIDDING'].includes(this.mission?.status ?? '');
+    return this.auth.isPilot && ['PUBLISHED', 'BIDDING'].includes(this.mission?.status ?? '');
   }
   placeBid(): void {
-    if (!this.mission) {
+    if (!this.mission || this.bidBusy) {
       return;
     }
     const amount = Math.round(Number(this.bidAmount));
@@ -151,21 +188,89 @@ export class MissionDetailComponent implements OnInit {
       return;
     }
     const updating = !!this.myBid;
-    this.bids = this.bidService.place(this.mission.id, this.pilotName, amount);
-    this.bidAmount = '';
-    this.toast.show(`${updating ? 'Bid updated' : 'Bid placed'} — $${amount}`, '#12a06a');
+    this.bidBusy = true;
+    this.bidService.place(this.mission.id, { amount, message: this.bidMessage.trim() || undefined }).subscribe({
+      next: () => {
+        this.bidBusy = false;
+        this.bidAmount = '';
+        this.bidMessage = '';
+        this.toast.show(`${updating ? 'Bid updated' : 'Bid placed'} — $${amount}`, '#12a06a');
+        this.refresh();
+      },
+      error: (err) => {
+        console.error('Failed to place bid', err);
+        this.bidBusy = false;
+        this.toast.show(this.serverMessage(err, 'Could not place the bid'), '#e04a3f');
+      }
+    });
+  }
+  withdrawBid(): void {
+    const bid = this.myBid;
+    if (!bid || this.bidBusy) {
+      return;
+    }
+    this.bidBusy = true;
+    this.bidService.withdraw(bid.id).subscribe({
+      next: () => {
+        this.bidBusy = false;
+        this.toast.show('Bid withdrawn');
+        this.refresh();
+      },
+      error: (err) => {
+        console.error('Failed to withdraw bid', err);
+        this.bidBusy = false;
+        this.toast.show(this.serverMessage(err, 'Could not withdraw the bid'), '#e04a3f');
+      }
+    });
   }
 
-  // ---- designer award (client-only) ----
+  // ---- designer award ----
   firstName(name: string): string {
     return name.split(' ')[0];
   }
-  award(bid: Bid): void {
-    if (!this.mission) {
+  askAccept(bid: Bid): void {
+    this.pendingAccept = bid;
+  }
+  confirmAccept(): void {
+    const bid = this.pendingAccept;
+    this.pendingAccept = null;
+    if (!bid) {
       return;
     }
-    this.bids = this.bidService.award(this.mission.id, bid.id);
-    this.toast.show(`Awarded to ${bid.pilotName} — other bids declined`, '#7c5cff');
+    this.bidService.accept(bid.id).subscribe({
+      next: () => {
+        this.toast.show(`Awarded to ${bid.pilotName} — other bids rejected`, '#7c5cff');
+        this.refresh();
+      },
+      error: (err) => {
+        console.error('Failed to accept bid', err);
+        this.toast.show(this.serverMessage(err, 'Could not accept the bid'), '#e04a3f');
+        this.refresh();
+      }
+    });
+  }
+
+  // ---- completion (winning pilot) ----
+  askComplete(): void {
+    this.pendingComplete = true;
+  }
+  confirmComplete(): void {
+    this.pendingComplete = false;
+    const mission = this.mission;
+    if (!mission) {
+      return;
+    }
+    this.missionService.complete(mission.id).subscribe({
+      next: () => {
+        this.toast.show('Mission marked as completed', '#12a06a');
+        this.refresh();
+      },
+      error: (err) => {
+        console.error('Failed to complete mission', err);
+        this.toast.show(this.serverMessage(err, 'Could not complete the mission'), '#e04a3f');
+        this.refresh();
+      }
+    });
   }
 
   // ---- delete ----

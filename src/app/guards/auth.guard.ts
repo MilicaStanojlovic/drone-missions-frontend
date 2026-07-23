@@ -25,6 +25,20 @@ export const designerGuard: CanActivateFn = () => {
 };
 
 /**
+ * Requires a logged-in PILOT (mirrors the backend `@PreAuthorize("hasRole('PILOT')")`
+ * on the bids endpoints). Designers are bounced to their dashboard; logged-out
+ * users to login.
+ */
+export const pilotGuard: CanActivateFn = () => {
+  const auth = inject(AuthService);
+  const router = inject(Router);
+  if (!auth.isLoggedIn) {
+    return router.createUrlTree(['/login']);
+  }
+  return auth.isPilot ? true : router.createUrlTree(['/missions/mine']);
+};
+
+/**
  * The '' route: a logged-in user is sent to their role home (DESIGNER → their
  * missions, PILOT → the open marketplace); a logged-out visitor stays to see
  * the public landing page.
