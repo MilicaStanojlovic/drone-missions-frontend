@@ -93,14 +93,41 @@
         @if (auth.isPilot) {
           <div class="panel__head"><span class="panel__title">Your bid</span></div>
           <div class="panel__body">
-            @if (myBid) {
+            @if (isWinner) {
+              @if (mission.status === 'IN_PROGRESS') {
+                <div class="finish">
+                  <div class="finish__title">Your mission is underway</div>
+                  <div class="finish__sub">Started {{ windowText }} — let the designer know once it's done.</div>
+                  <button type="button" class="finish__cta" (click)="askComplete()">Mark mission finished</button>
+                </div>
+              } @else if (mission.status === 'COMPLETED') {
+                <div class="finish finish--done">
+                  <div class="finish__title">✓ Mission completed</div>
+                  <div class="finish__sub">Thanks — you marked this mission as finished.</div>
+                </div>
+              } @else if (mission.status === 'AWARDED') {
+                <div class="finish finish--waiting">
+                  <div class="finish__title">You won this mission</div>
+                  <div class="finish__sub">The finish button appears once the mission's start date arrives.</div>
+                </div>
+              }
+            }
+            @if (myBid; as mine) {
               <div class="mybid">
                 <div class="mybid__label">Current bid</div>
-                <div class="mybid__amount">${{ myBid.amount }}</div>
-                @if (myBid.status === 'accepted') {
+                <div class="mybid__amount">${{ mine.amount }}</div>
+                @if (mine.message) {
+                  <div class="mybid__msg">“{{ mine.message }}”</div>
+                }
+                @if (mine.status === 'ACCEPTED') {
                   <div class="mybid__status mybid__status--won">✓ You won this mission</div>
-                } @else if (myBid.status === 'declined') {
-                  <div class="mybid__status mybid__status--lost">This bid was declined</div>
+                } @else if (mine.status === 'REJECTED') {
+                  <div class="mybid__status mybid__status--lost">This bid was not accepted</div>
+                }
+                @if (mine.status === 'PENDING') {
+                  <button type="button" class="mybid__withdraw" [disabled]="bidBusy" (click)="withdrawBid()">
+                    Withdraw bid
+                  </button>
                 }
               </div>
             }
@@ -110,11 +137,18 @@
                 <input class="bidfield__input" type="number" min="1" placeholder="e.g. 450"
                   [value]="bidAmount" (input)="bidAmount = $any($event.target).value" />
               </label>
-              <button type="button" class="panel__cta" (click)="placeBid()">{{ myBid ? 'Update bid' : 'Place bid' }}</button>
+              <label class="bidfield">
+                <span class="bidfield__label">Message (optional)</span>
+                <textarea class="bidfield__input bidfield__textarea" rows="2" maxlength="500"
+                  placeholder="Anything the designer should know…"
+                  [value]="bidMessage" (input)="bidMessage = $any($event.target).value"></textarea>
+              </label>
+              <button type="button" class="panel__cta" [disabled]="bidBusy" (click)="placeBid()">
+                {{ myBid ? 'Update bid' : 'Place bid' }}
+              </button>
             } @else if (!myBid) {
               <div class="panel__empty">This mission isn't open for bids.</div>
             }
-            <p class="panel__note">Bids are a local demo — not saved to the server yet.</p>
           </div>
         } @else {
           <div class="panel__head">
@@ -126,24 +160,24 @@
           } @else {
             <div class="bids">
               @for (b of bids; track b.id) {
-                <div class="bid" [class.bid--accepted]="b.status === 'accepted'">
+                <div class="bid" [class.bid--accepted]="b.status === 'ACCEPTED'">
                   <div class="bid__row">
                     <div class="bid__who">
                       <span class="bid__pilot">{{ b.pilotName }}</span>
-                      @if (b.status === 'accepted') { <span class="bid__tag bid__tag--awarded">AWARDED</span> }
-                      @if (b.status === 'declined') { <span class="bid__tag">DECLINED</span> }
+                      @if (b.status === 'ACCEPTED') { <span class="bid__tag bid__tag--awarded">ACCEPTED</span> }
+                      @if (b.status === 'REJECTED') { <span class="bid__tag">REJECTED</span> }
                     </div>
                     <div class="bid__price">${{ b.amount }}</div>
                   </div>
-                  @if (isOwner && !hasAward && b.status === 'pending') {
-                    <button type="button" class="bid__award" (click)="award(b)">Award to {{ firstName(b.pilotName) }}</button>
+                  @if (b.message) {
+                    <div class="bid__msg">“{{ b.message }}”</div>
+                  }
+                  @if (isOwner && !hasAward && b.status === 'PENDING') {
+                    <button type="button" class="bid__award" (click)="askAccept(b)">Accept {{ firstName(b.pilotName) }}'s bid</button>
                   }
                 </div>
               }
             </div>
-          }
-          @if (isOwner) {
-            <p class="panel__note">Bids are a local demo — awarding is client-only for now.</p>
           }
         }
       </aside>
@@ -160,4 +194,26 @@
   [danger]="true"
   (confirm)="confirmDelete()"
   (cancel)="pendingDelete = false"
+/>
+
+<app-confirm-dialog
+  [open]="pendingAccept !== null"
+  title="Accept this bid?"
+  [message]="pendingAccept ? 'Accept ' + pendingAccept.pilotName + '’s bid of $' + pendingAccept.amount + '? All other bids will be rejected and the mission will be awarded.' : ''"
+  confirmText="Accept bid"
+  cancelText="Cancel"
+  [danger]="false"
+  (confirm)="confirmAccept()"
+  (cancel)="pendingAccept = null"
+/>
+
+<app-confirm-dialog
+  [open]="pendingComplete"
+  title="Mark mission finished?"
+  [message]="mission ? 'Confirm that “' + mission.name + '” has been completed. This moves it to Completed.' : ''"
+  confirmText="Yes, it's finished"
+  cancelText="Not yet"
+  [danger]="false"
+  (confirm)="confirmComplete()"
+  (cancel)="pendingComplete = false"
 />

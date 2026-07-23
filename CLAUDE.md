@@ -8,15 +8,16 @@ Angular 19 application (Angular CLI 19.2.19), standalone components (no `NgModul
 
 - **Auth** — JWT register / login / profile, with two roles (`DESIGNER` / `PILOT`) gating what you can do and see.
 - **Missions** — a marketplace (open missions for pilots) and a designer dashboard (own missions), plus a mission planner/editor with a **Leaflet** map (waypoints + circle/polygon geofence) and a role-aware detail view with a status timeline and read-only map.
-- **Bids** — a bids panel on the detail view (pilots place, designers award). **Client-only demo — no backend** (see the note under Backend integration).
+- **Bids** — a real backend feature: pilots place/update/withdraw a bid (amount + optional message) from the detail view and see their history on `/my-bids`; designers see incoming bids and Accept one (rejects the rest, awards the mission).
+- **Completion** — after award, a mission auto-advances `AWARDED → IN_PROGRESS` once its start date arrives (computed lazily on read, no scheduler). The winning pilot marks it finished (`→ COMPLETED`) from the detail page; if the end date passes without confirmation, a `finish-reminder` popup nags them at app root.
 - **Toasts** — a single-toast notification bus mounted at app root.
 
 File map (under `src/app/`):
 
-- `models/` — `mission.model.ts` (`Mission`, `MissionStatus` + status consts, `LatLng`, `Geofence`, `MissionPayload`), `user.model.ts` (`UserRole`, `UserResponse`, `RegisterPayload`, `LoginPayload`).
-- `services/` — `auth.service.ts`, `mission.service.ts`, `bid.service.ts` (client-only), `toast.service.ts`, `auth.interceptor.ts` (functional `HttpInterceptorFn`).
-- `guards/auth.guard.ts` — exports `authGuard`, `designerGuard`, `landingGuard` (functional `CanActivateFn`s).
-- `components/` — `landing`, `login`, `register`, `profile`, `mission-list`, `mission-detail`, `mission-form`, `mission-map` (Leaflet — interactive in the editor/detail, and a static `[interactive]="false"` thumbnail on list cards), `confirm-dialog`, `toast`.
+- `models/` — `mission.model.ts` (`Mission`, `MissionStatus` + status consts, `LatLng`, `Geofence`, `MissionPayload`), `bid.model.ts` (`Bid`, `BidStatus` + status consts, `BidPayload`), `user.model.ts` (`UserRole`, `UserResponse`, `RegisterPayload`, `LoginPayload`).
+- `services/` — `auth.service.ts`, `mission.service.ts`, `bid.service.ts`, `toast.service.ts`, `auth.interceptor.ts` (functional `HttpInterceptorFn`).
+- `guards/auth.guard.ts` — exports `authGuard`, `designerGuard`, `pilotGuard`, `landingGuard` (functional `CanActivateFn`s).
+- `components/` — `landing`, `login`, `register`, `profile`, `mission-list`, `mission-detail`, `mission-form`, `my-bids` (pilot bid history), `finish-reminder` (overdue-mission popup at app root), `mission-map` (Leaflet — interactive in the editor/detail, and a static `[interactive]="false"` thumbnail on list cards), `confirm-dialog`, `toast`.
 - `util/geo.ts` — framework-free geo helpers (haversine distance/duration, centroid, geofence build/clamp, in-zone tests); `DEFAULT_CENTER` / `DEFAULT_ZOOM`.
 
 The Spring backend is expected at `http://localhost:8085`; the frontend fails gracefully (loading/error states) when it is down.
@@ -77,7 +78,8 @@ Conventions for extending the Mission feature (and shaping future features the s
 - The URL is currently a hard-coded `private readonly baseUrl` string in the service. If a second service needs the same host, promote the root (`http://localhost:8085/api/v1`) to `src/environments/environment.ts` (Angular's `ng generate environments`) rather than duplicating the literal.
 - **CORS / proxy:** the backend must allow origin `http://localhost:4200`, or add a `proxy.conf.json` and run `ng serve --proxy-config` so `/api` is same-origin. There is no proxy config yet.
 - Timestamps (`Instant`) cross the wire as ISO-8601 strings — keep them typed as `string` in models and convert at the edges (see the form's `datetime-local` helpers).
-- **Bids are client-only.** `BidService` has **no backend** — it persists to `localStorage` under the prefix `dm_bids_<missionId>`. Treat it as a demo/placeholder; if/when a real bids API lands, swap the storage calls for `HttpClient` and keep the same method shapes. Don't assume a `/bids` endpoint exists.
+- **Bids API.** `BidService` talks to the real backend: `POST /missions/{id}/bids` (place/update own bid), `GET /missions/{id}/bids` (owner sees all, a pilot only their own), `GET /bids/my`, `DELETE /bids/{id}` (withdraw pending), `POST /bids/{id}/accept` (award — rejects the rest, mission → `AWARDED`). One bid per pilot per mission; the first bid flips a `PUBLISHED` mission to `BIDDING`.
+- **Completion API.** `GET /missions/my-jobs` (the pilot's awarded missions) and `POST /missions/{id}/complete` (winning pilot marks `IN_PROGRESS → COMPLETED`). The `AWARDED → IN_PROGRESS` step is applied server-side on read once `startTime` has passed — there is no scheduler, so status is only ever advanced when a mission is fetched.
 
 ## 2. Service layer patterns
 
@@ -109,6 +111,7 @@ Feature routes are declared in `src/app/app.routes.ts`:
 | `missions/new` | `MissionFormComponent` | `authGuard`, `designerGuard` |
 | `missions/:id/edit` | `MissionFormComponent` | `authGuard`, `designerGuard` |
 | `missions/:id` | `MissionDetailComponent` | `authGuard` |
+| `my-bids` | `MyBidsComponent` | `authGuard`, `pilotGuard` |
 | `profile` | `ProfileComponent` | `authGuard` |
 | `**` | → redirect to `''` | — |
 

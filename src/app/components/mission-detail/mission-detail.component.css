@@ -313,6 +313,52 @@
 .mybid__status { margin-top: 8px; font-size: 13px; font-weight: 600; }
 .mybid__status--won { color: #12a06a; }
 .mybid__status--lost { color: #93a1b0; }
+.mybid__msg { margin-top: 6px; font-size: 13px; color: #4a5a6a; font-style: italic; }
+.mybid__withdraw {
+  margin-top: 11px;
+  width: 100%;
+  background: #fff;
+  border: 1px solid #f0c9c5;
+  color: #c43a30;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 8px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.mybid__withdraw:hover { background: #e04a3f; color: #fff; border-color: #e04a3f; }
+.mybid__withdraw:disabled { opacity: 0.6; cursor: default; }
+
+.bidfield__textarea { resize: vertical; min-height: 52px; }
+
+.finish {
+  background: #eef7ff;
+  border: 1px solid #cfe6fb;
+  border-radius: 10px;
+  padding: 14px 15px;
+  margin-bottom: 14px;
+}
+.finish--done { background: #eef8f2; border-color: #cbe9d8; }
+.finish--waiting { background: #f7f9fb; border-color: #e8edf2; }
+.finish__title { font-size: 14px; font-weight: 700; color: #16222e; }
+.finish__sub { margin-top: 5px; font-size: 12.5px; color: #5c6b7a; }
+.finish__cta {
+  margin-top: 12px;
+  width: 100%;
+  background: #2f6bff;
+  border: none;
+  color: #fff;
+  font-family: inherit;
+  font-size: 13.5px;
+  font-weight: 600;
+  padding: 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+.finish__cta:hover { background: #2357d6; }
 
 .bids { display: block; }
 .bid {
@@ -349,6 +395,7 @@
   color: #1b2732;
   flex-shrink: 0;
 }
+.bid__msg { margin-top: 7px; font-size: 13px; color: #4a5a6a; font-style: italic; }
 .bid__award {
   margin-top: 11px;
   width: 100%;

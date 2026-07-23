@@ -35,43 +35,33 @@
     </header>
 
     <div class="feed-controls">
-      <div class="tabs">
-        <button type="button" class="tab" [class.tab--active]="tab === 'open'" (click)="setTab('open')">
-          Open missions
-        </button>
-        <button type="button" class="tab" [class.tab--active]="tab === 'mine'" (click)="setTab('mine')">
-          My bids &amp; jobs
-        </button>
-      </div>
-      @if (tab === 'open') {
-        <form class="filters" [formGroup]="filterForm">
-          <div class="search">
-            <span class="search__icon" aria-hidden="true">⚲</span>
-            <input
-              class="search__input"
-              type="text"
-              formControlName="keyword"
-              placeholder="Search name or description…"
-            />
-          </div>
+      <form class="filters" [formGroup]="filterForm">
+        <div class="search">
+          <span class="search__icon" aria-hidden="true">⚲</span>
           <input
-            class="filters__input"
+            class="search__input"
             type="text"
-            formControlName="location"
-            placeholder="Location…"
-            aria-label="Filter by location"
+            formControlName="keyword"
+            placeholder="Search name or description…"
           />
-          <input
-            class="filters__input filters__date"
-            type="date"
-            formControlName="date"
-            aria-label="Flyable on date"
-          />
-          @if (hasActiveFilters) {
-            <button type="button" class="filters__clear" (click)="clearFilters()">Clear</button>
-          }
-        </form>
-      }
+        </div>
+        <input
+          class="filters__input"
+          type="text"
+          formControlName="location"
+          placeholder="Location…"
+          aria-label="Filter by location"
+        />
+        <input
+          class="filters__input filters__date"
+          type="date"
+          formControlName="date"
+          aria-label="Flyable on date"
+        />
+        @if (hasActiveFilters) {
+          <button type="button" class="filters__clear" (click)="clearFilters()">Clear</button>
+        }
+      </form>
     </div>
   }
 
@@ -84,13 +74,11 @@
     <div class="empty">
       <div class="empty__title">
         @if (mine) { No missions yet }
-        @else if (tab === 'mine') { No bids yet }
         @else if (hasActiveFilters) { No missions match your filters }
         @else { No open missions }
       </div>
       <div class="empty__sub">
         @if (mine) { Create your first mission to start collecting bids. }
-        @else if (tab === 'mine') { Missions you bid on will appear here. }
         @else if (hasActiveFilters) { Try adjusting or clearing your filters. }
         @else { Check back soon for published missions. }
       </div>

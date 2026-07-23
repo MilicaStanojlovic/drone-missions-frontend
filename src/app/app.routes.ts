@@ -7,7 +7,8 @@ import { LoginComponent } from './components/login/login.component';
 import { RegisterComponent } from './components/register/register.component';
 import { LandingComponent } from './components/landing/landing.component';
 import { ProfileComponent } from './components/profile/profile.component';
-import { authGuard, designerGuard, landingGuard } from './guards/auth.guard';
+import { MyBidsComponent } from './components/my-bids/my-bids.component';
+import { authGuard, designerGuard, landingGuard, pilotGuard } from './guards/auth.guard';
 
 export const routes: Routes = [
   // Public landing; logged-in users are redirected to their role home by the guard.
@@ -28,6 +29,9 @@ export const routes: Routes = [
   { path: 'missions/new', component: MissionFormComponent, canActivate: [authGuard, designerGuard] },
   { path: 'missions/:id/edit', component: MissionFormComponent, canActivate: [authGuard, designerGuard] },
   { path: 'missions/:id', component: MissionDetailComponent, canActivate: [authGuard] },
+
+  // The pilot's bid history (pilot-only, like the backend's /bids/my).
+  { path: 'my-bids', component: MyBidsComponent, canActivate: [authGuard, pilotGuard] },
 
   { path: 'profile', component: ProfileComponent, canActivate: [authGuard] },
 

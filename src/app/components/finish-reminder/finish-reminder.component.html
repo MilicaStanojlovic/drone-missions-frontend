@@ -1,0 +1,10 @@
+<app-confirm-dialog
+  [open]="current !== null"
+  title="Mission finished?"
+  [message]="message"
+  confirmText="Yes, it's finished"
+  cancelText="Not yet"
+  [danger]="false"
+  (confirm)="confirm()"
+  (cancel)="dismiss()"
+/>

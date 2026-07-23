@@ -12,7 +12,6 @@ import {
 } from '../../models/mission.model';
 import { FeedFilters, MissionService } from '../../services/mission.service';
 import { AuthService } from '../../services/auth.service';
-import { BidService } from '../../services/bid.service';
 import { MissionMapComponent } from '../mission-map/mission-map.component';
 import { distanceText } from '../../util/geo';
 
@@ -25,8 +24,9 @@ interface StatTile {
 /**
  * Two experiences off one component, chosen by the route's `mine` data flag:
  * - `mine` = true  → the designer dashboard (own missions + stat tiles).
- * - `mine` = false → the pilot feed / marketplace (open missions + tabs + filters).
- * Cards link to the mission detail; edit/delete live there.
+ * - `mine` = false → the pilot feed / marketplace (open missions + filters).
+ * Cards link to the mission detail; edit/delete live there. The pilot's bid
+ * history lives on its own page (/my-bids).
  */
 @Component({
   selector: 'app-mission-list',
@@ -37,7 +37,6 @@ interface StatTile {
 export class MissionListComponent implements OnInit {
   private readonly missionService = inject(MissionService);
   private readonly route = inject(ActivatedRoute);
-  private readonly bidService = inject(BidService);
   private readonly fb = inject(FormBuilder);
   readonly auth = inject(AuthService);
 
@@ -49,10 +48,7 @@ export class MissionListComponent implements OnInit {
   error = false;
   missions: Mission[] = [];
 
-  /** Pilot feed only. */
-  tab: 'open' | 'mine' = 'open';
-
-  /** Pilot-feed server-side filters (open tab). */
+  /** Pilot-feed server-side filters. */
   readonly filterForm = this.fb.nonNullable.group({
     keyword: '',
     location: '',
@@ -123,24 +119,9 @@ export class MissionListComponent implements OnInit {
     ];
   }
 
-  /**
-   * The cards to render. The open feed is already filtered server-side (keyword/location/date),
-   * so it renders as-is; only "My bids & jobs" narrows client-side (bids are local-only).
-   */
+  /** The cards to render — both views arrive already filtered by the backend. */
   get visibleMissions(): Mission[] {
-    if (this.mine) {
-      return this.missions;
-    }
-    // "My bids & jobs" = open missions the pilot has placed a (local) bid on.
-    if (this.tab === 'mine') {
-      const me = this.auth.profile?.username ?? '';
-      return this.missions.filter((m) => !!this.bidService.myBid(m.id, me));
-    }
     return this.missions;
-  }
-
-  setTab(tab: 'open' | 'mine'): void {
-    this.tab = tab;
   }
 
   /** "Jul 18 – Jul 22" style flight window from the mission's start/end times. */
