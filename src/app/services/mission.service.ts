@@ -1,8 +1,15 @@
 import { Injectable, inject } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
 import { Mission, MissionPayload } from '../models/mission.model';
+
+/** Optional server-side filters for the open feed. `date` is a `yyyy-MM-dd` string. */
+export interface FeedFilters {
+  location?: string;
+  keyword?: string;
+  date?: string;
+}
 
 @Injectable({ providedIn: 'root' })
 export class MissionService {
@@ -10,9 +17,19 @@ export class MissionService {
   private readonly baseUrl = 'http://localhost:8085/api/v1/missions';
 
   /** The open marketplace — every mission the backend exposes to all users
-   *  (PUBLISHED / BIDDING). */
-  getAll(): Observable<Mission[]> {
-    return this.http.get<Mission[]>(this.baseUrl);
+   *  (PUBLISHED / BIDDING), optionally narrowed by location / keyword / date. */
+  getAll(filters: FeedFilters = {}): Observable<Mission[]> {
+    let params = new HttpParams();
+    if (filters.location?.trim()) {
+      params = params.set('location', filters.location.trim());
+    }
+    if (filters.keyword?.trim()) {
+      params = params.set('keyword', filters.keyword.trim());
+    }
+    if (filters.date) {
+      params = params.set('date', filters.date);
+    }
+    return this.http.get<Mission[]>(this.baseUrl, { params });
   }
 
   /** Only the missions created by the current user. */
