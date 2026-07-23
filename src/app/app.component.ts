@@ -4,11 +4,11 @@ import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/rou
 
 import { AuthService } from './services/auth.service';
 import { ToastComponent } from './components/toast/toast.component';
-import { FinishReminderComponent } from './components/finish-reminder/finish-reminder.component';
+import { NotificationBellComponent } from './components/notification-bell/notification-bell.component';
 
 @Component({
   selector: 'app-root',
-  imports: [CommonModule, RouterOutlet, RouterLink, RouterLinkActive, ToastComponent, FinishReminderComponent],
+  imports: [CommonModule, RouterOutlet, RouterLink, RouterLinkActive, ToastComponent, NotificationBellComponent],
   templateUrl: './app.component.html',
   styleUrl: './app.component.css'
 })
