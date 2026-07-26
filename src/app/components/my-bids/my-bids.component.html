@@ -21,7 +21,7 @@
       @for (b of bids; track b.id) {
         <div class="row">
           <div class="row__main">
-            <a class="row__mission" [routerLink]="['/missions', b.missionId]">{{ b.missionName }}</a>
+            <a class="row__mission" [routerLink]="['/missions', b.missionId]" [queryParams]="{ from: 'my-bids' }">{{ b.missionName }}</a>
             @if (b.message) {
               <div class="row__msg">“{{ b.message }}”</div>
             }

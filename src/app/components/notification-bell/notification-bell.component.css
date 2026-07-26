@@ -23,9 +23,15 @@
 }
 
 .bell__icon {
-  font-size: 16px;
-  line-height: 1;
-  filter: grayscale(0.2);
+  display: block;
+  width: 18px;
+  height: 18px;
+  color: #46566a;
+}
+
+.bell__btn:hover .bell__icon,
+.bell__btn--active .bell__icon {
+  color: #16222e;
 }
 
 .bell__badge {

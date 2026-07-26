@@ -1,7 +1,9 @@
 .nav {
   position: sticky;
   top: 0;
-  z-index: 40;
+  /* Above Leaflet's map panes (200–700) and controls (1000) so the notification
+     dropdown isn't hidden behind a mission map. Confirm dialogs (2000) still win. */
+  z-index: 1100;
   background: #ffffff;
   border-bottom: 1px solid #e5eaf0;
   box-shadow: 0 1px 3px rgba(20, 35, 55, 0.04);

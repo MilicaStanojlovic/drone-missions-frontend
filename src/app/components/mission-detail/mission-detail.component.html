@@ -27,10 +27,17 @@
           }
         </div>
         <h1 class="detail__title">{{ mission.name }}</h1>
+        @if (mission.designerEmail) {
+          <div style="margin-top:7px;font-size:13px;color:#93a1b0">Designed by
+            <strong style="font-weight:600;color:#46566a">{{ mission.designerEmail }}</strong></div>
+        }
       </div>
       @if (isOwner) {
         <div class="detail__actions">
           <a [routerLink]="['/missions', mission.id, 'edit']" class="btn btn--soft">Edit</a>
+          @if (canCancel) {
+            <button type="button" class="btn btn--soft" (click)="askCancel()">Cancel mission</button>
+          }
           <button type="button" class="btn btn--danger" (click)="askDelete()">Delete</button>
         </div>
       }
@@ -106,9 +113,10 @@
                   <div class="finish__sub">Thanks — you marked this mission as finished.</div>
                 </div>
               } @else if (mission.status === 'AWARDED') {
-                <div class="finish finish--waiting">
+                <div class="finish">
                   <div class="finish__title">You won this mission</div>
-                  <div class="finish__sub">The finish button appears once the mission's start date arrives.</div>
+                  <div class="finish__sub">Start it when you're ready to fly — then you can mark it finished.</div>
+                  <button type="button" class="finish__cta" (click)="askStart()">Start mission</button>
                 </div>
               }
             }
@@ -134,18 +142,21 @@
             @if (canBid) {
               <label class="bidfield">
                 <span class="bidfield__label">{{ myBid ? 'Update your bid (USD)' : 'Your bid (USD)' }}</span>
-                <input class="bidfield__input" type="number" min="1" placeholder="e.g. 450"
+                <input class="bidfield__input" type="number" min="1"
+                  [placeholder]="myBid ? 'Current: $' + myBid.amount + ' (leave blank to keep)' : 'e.g. 450'"
                   [value]="bidAmount" (input)="bidAmount = $any($event.target).value" />
               </label>
               <label class="bidfield">
                 <span class="bidfield__label">Message (optional)</span>
                 <textarea class="bidfield__input bidfield__textarea" rows="2" maxlength="500"
-                  placeholder="Anything the designer should know…"
+                  [placeholder]="myBid?.message ? 'Leave blank to keep your current message' : 'Anything the designer should know…'"
                   [value]="bidMessage" (input)="bidMessage = $any($event.target).value"></textarea>
               </label>
               <button type="button" class="panel__cta" [disabled]="bidBusy" (click)="placeBid()">
                 {{ myBid ? 'Update bid' : 'Place bid' }}
               </button>
+            } @else if (deadlinePassed && auth.isPilot) {
+              <div class="panel__empty">Bidding is closed — the deadline has passed.</div>
             } @else if (!myBid) {
               <div class="panel__empty">This mission isn't open for bids.</div>
             }
@@ -216,4 +227,26 @@
   [danger]="false"
   (confirm)="confirmComplete()"
   (cancel)="pendingComplete = false"
+/>
+
+<app-confirm-dialog
+  [open]="pendingStart"
+  title="Start this mission?"
+  [message]="mission ? 'Mark “' + mission.name + '” as underway. This moves it to In Progress.' : ''"
+  confirmText="Start mission"
+  cancelText="Not yet"
+  [danger]="false"
+  (confirm)="confirmStart()"
+  (cancel)="pendingStart = false"
+/>
+
+<app-confirm-dialog
+  [open]="pendingCancel"
+  title="Cancel this mission?"
+  [message]="mission ? '“' + mission.name + '” will be cancelled and any outstanding bids rejected. This cannot be undone.' : ''"
+  confirmText="Cancel mission"
+  cancelText="Keep it"
+  [danger]="true"
+  (confirm)="confirmCancel()"
+  (cancel)="pendingCancel = false"
 />

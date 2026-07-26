@@ -1,6 +1,6 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Params, Router, RouterLink } from '@angular/router';
 
 import {
   Geofence,
@@ -55,8 +55,15 @@ export class MissionDetailComponent implements OnInit {
   mission: Mission | null = null;
   bids: Bid[] = [];
 
+  /** Where the user came from, so "Back" returns there (e.g. 'my-bids'). */
+  from = '';
+  /** Feed filters carried in via the query string, replayed on Back to the feed. */
+  feedParams: Params = {};
+
   pendingDelete = false;
   pendingComplete = false;
+  pendingStart = false;
+  pendingCancel = false;
   bidAmount = '';
   bidMessage = '';
   bidBusy = false;
@@ -64,6 +71,14 @@ export class MissionDetailComponent implements OnInit {
   pendingAccept: Bid | null = null;
 
   ngOnInit(): void {
+    const qp = this.route.snapshot.queryParamMap;
+    this.from = qp.get('from') ?? '';
+    for (const key of ['keyword', 'location', 'date']) {
+      const value = qp.get(key);
+      if (value) {
+        this.feedParams[key] = value;
+      }
+    }
     this.route.paramMap.subscribe((params) => this.load(Number(params.get('id'))));
   }
 
@@ -119,6 +134,14 @@ export class MissionDetailComponent implements OnInit {
   get isWinner(): boolean {
     return this.auth.isPilot && !!this.mission && this.mission.awardedPilotId === this.auth.userId;
   }
+  /** The awarded pilot can start their mission while it's still AWARDED. */
+  get canStart(): boolean {
+    return this.isWinner && this.mission?.status === 'AWARDED';
+  }
+  /** The owning designer can cancel any mission that isn't finished yet. */
+  get canCancel(): boolean {
+    return this.isOwner && !['COMPLETED', 'CANCELLED'].includes(this.mission?.status ?? '');
+  }
   get waypoints(): LatLng[] {
     return this.mission?.waypoints ?? [];
   }
@@ -164,10 +187,22 @@ export class MissionDetailComponent implements OnInit {
   }
 
   get backLabel(): string {
+    if (this.from === 'my-bids') {
+      return 'Back to my bids';
+    }
     return this.auth.isPilot ? 'Back to feed' : 'My Missions';
   }
   back(): void {
-    this.router.navigate([this.auth.isPilot ? '/missions' : '/missions/mine']);
+    if (this.from === 'my-bids') {
+      this.router.navigate(['/my-bids']);
+      return;
+    }
+    if (this.auth.isPilot) {
+      // Replay the feed filters so the marketplace comes back the way it was left.
+      this.router.navigate(['/missions'], { queryParams: this.feedParams });
+      return;
+    }
+    this.router.navigate(['/missions/mine']);
   }
 
   // ---- pilot bidding ----
@@ -175,21 +210,38 @@ export class MissionDetailComponent implements OnInit {
   get myBid(): Bid | undefined {
     return this.auth.isPilot ? this.bids[0] : undefined;
   }
+  /** The bidding deadline (inclusive of its whole day) has gone by. */
+  get deadlinePassed(): boolean {
+    const d = this.mission?.biddingDeadline;
+    return !!d && new Date() > new Date(d + 'T23:59:59');
+  }
   get canBid(): boolean {
-    return this.auth.isPilot && ['PUBLISHED', 'BIDDING'].includes(this.mission?.status ?? '');
+    return (
+      this.auth.isPilot &&
+      ['PUBLISHED', 'BIDDING'].includes(this.mission?.status ?? '') &&
+      !this.deadlinePassed
+    );
   }
   placeBid(): void {
     if (!this.mission || this.bidBusy) {
       return;
     }
-    const amount = Math.round(Number(this.bidAmount));
+    const existing = this.myBid;
+    // Updating an existing bid: a blank amount field means "keep the current price",
+    // so you can change just the message without re-typing the amount.
+    const typed = this.bidAmount.trim();
+    const amount = typed ? Math.round(Number(typed)) : (existing?.amount ?? 0);
     if (!amount || amount <= 0) {
       this.toast.show('Enter a valid bid amount', '#e04a3f');
       return;
     }
-    const updating = !!this.myBid;
+    const updating = !!existing;
+    // Same "blank = keep" rule for the message: an empty box on an update keeps the
+    // existing message instead of clearing it, so changing only the amount leaves it intact.
+    const typedMessage = this.bidMessage.trim();
+    const message = typedMessage || (updating ? existing?.message : undefined);
     this.bidBusy = true;
-    this.bidService.place(this.mission.id, { amount, message: this.bidMessage.trim() || undefined }).subscribe({
+    this.bidService.place(this.mission.id, { amount, message: message || undefined }).subscribe({
       next: () => {
         this.bidBusy = false;
         this.bidAmount = '';
@@ -250,6 +302,29 @@ export class MissionDetailComponent implements OnInit {
     });
   }
 
+  // ---- start (winning pilot) ----
+  askStart(): void {
+    this.pendingStart = true;
+  }
+  confirmStart(): void {
+    this.pendingStart = false;
+    const mission = this.mission;
+    if (!mission) {
+      return;
+    }
+    this.missionService.start(mission.id).subscribe({
+      next: () => {
+        this.toast.show('Mission started', '#2f6bff');
+        this.refresh();
+      },
+      error: (err) => {
+        console.error('Failed to start mission', err);
+        this.toast.show(this.serverMessage(err, 'Could not start the mission'), '#e04a3f');
+        this.refresh();
+      }
+    });
+  }
+
   // ---- completion (winning pilot) ----
   askComplete(): void {
     this.pendingComplete = true;
@@ -291,6 +366,29 @@ export class MissionDetailComponent implements OnInit {
       error: (err) => {
         console.error('Failed to delete mission', err);
         this.toast.show('Could not delete the mission', '#e04a3f');
+      }
+    });
+  }
+
+  // ---- cancel (owning designer) ----
+  askCancel(): void {
+    this.pendingCancel = true;
+  }
+  confirmCancel(): void {
+    this.pendingCancel = false;
+    const mission = this.mission;
+    if (!mission) {
+      return;
+    }
+    this.missionService.cancel(mission.id).subscribe({
+      next: () => {
+        this.toast.show('Mission cancelled', '#e04a3f');
+        this.refresh();
+      },
+      error: (err) => {
+        console.error('Failed to cancel mission', err);
+        this.toast.show(this.serverMessage(err, 'Could not cancel the mission'), '#e04a3f');
+        this.refresh();
       }
     });
   }
