@@ -146,3 +146,22 @@
   color: #6b7c8d;
   padding: 40px 0;
 }
+
+.profile__card--ratings {
+  margin-top: 16px;
+}
+
+.profile__section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.profile__section-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: #1b2732;
+}

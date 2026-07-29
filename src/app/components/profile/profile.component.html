@@ -43,6 +43,20 @@
 
       <button type="button" class="profile__logout" (click)="logout()">Log out</button>
     </div>
+
+    <div class="profile__card profile__card--ratings">
+      <div class="profile__section-head">
+        <h2 class="profile__section-title">Ratings</h2>
+        @if (ratings) {
+          <app-rating-stars [average]="ratings.average" [count]="ratings.count" />
+        }
+      </div>
+      @if (ratings) {
+        <app-rating-list [ratings]="ratings.ratings" />
+      } @else {
+        <p class="profile__state">Loading ratings…</p>
+      }
+    </div>
   } @else {
     <p class="profile__state">Loading your profile…</p>
   }

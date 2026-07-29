@@ -192,6 +192,47 @@
           }
         }
       </aside>
+
+      <!-- ratings panel: same for both sides, so it lives outside the role branch above -->
+      @if (mission.status === 'COMPLETED' && isParticipant) {
+        <aside class="panel">
+          <div class="panel__head"><span class="panel__title">Rating</span></div>
+          <div class="panel__body">
+            @if (canRate) {
+              <app-rating-form
+                [missionId]="mission.id"
+                [counterpartName]="counterpartName"
+                (rated)="onRated()"
+              />
+            }
+
+            @if (myRating; as mine) {
+              <app-rating-note
+                [rating]="mine"
+                [label]="'You rated ' + (counterpartName || 'the other side')"
+              />
+            }
+
+            @if (ratingOfMe; as theirs) {
+              <app-rating-note
+                [rating]="theirs"
+                [label]="theirs.raterName + ' rated you'"
+                [bordered]="true"
+              />
+            } @else {
+              <div class="panel__empty">
+                {{ counterpartName || 'The other side' }} hasn’t rated you yet.
+              </div>
+            }
+
+            @if (counterpartId !== null && counterpartName) {
+              <a class="detail__back" [routerLink]="['/users', counterpartId]">
+                View {{ counterpartName }}’s profile
+              </a>
+            }
+          </div>
+        </aside>
+      }
     </div>
   </main>
 }

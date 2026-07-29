@@ -447,3 +447,4 @@
   .detail__grid { grid-template-columns: 1fr; }
   .telemetry { grid-template-columns: repeat(2, 1fr); }
 }
+

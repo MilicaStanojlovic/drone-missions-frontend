@@ -313,3 +313,21 @@
 @media (max-width: 720px) {
   .stats { grid-template-columns: repeat(2, 1fr); }
 }
+
+/* The foot now carries the designer and their rating, so it wraps rather than
+   forcing "Created …" off the card on narrow widths. */
+.card__foot {
+  flex-wrap: wrap;
+  gap: 6px 10px;
+}
+
+.card__by {
+  font-family: 'Space Grotesk', system-ui, sans-serif;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #3c4a58;
+}
+
+.card__created {
+  margin-left: auto;
+}

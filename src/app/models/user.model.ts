@@ -20,6 +20,17 @@ export interface UserResponse {
   createdAt: string;
 }
 
+/**
+ * GET /users/{id} — what anyone may see about another account. No email: the
+ * backend withholds it from strangers.
+ */
+export interface PublicUser {
+  id: number;
+  username: string;
+  role: UserRole;
+  createdAt: string;
+}
+
 /** Body for POST /auth/register. */
 export interface RegisterPayload {
   username: string;

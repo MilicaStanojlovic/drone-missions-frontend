@@ -3,7 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { map, tap } from 'rxjs/operators';
 
-import { LoginPayload, RegisterPayload, UserResponse, UserRole } from '../models/user.model';
+import { LoginPayload, PublicUser, RegisterPayload, UserResponse, UserRole } from '../models/user.model';
 
 /**
  * Account registration, login and profile against the backend `/api/v1/auth`
@@ -53,6 +53,11 @@ export class AuthService {
     return this.http
       .get<UserResponse>(`${this.usersUrl}/me`)
       .pipe(tap((profile) => this.profileSubject.next(profile)));
+  }
+
+  /** Another account's public view — not cached, and it never carries an email. */
+  publicProfile(userId: number): Observable<PublicUser> {
+    return this.http.get<PublicUser>(`${this.usersUrl}/${userId}`);
   }
 
   /** Fetch and cache the profile if logged in and not already loaded (e.g. after

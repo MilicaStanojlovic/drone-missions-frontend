@@ -13,6 +13,7 @@ import {
 import { FeedFilters, MissionService } from '../../services/mission.service';
 import { AuthService } from '../../services/auth.service';
 import { MissionMapComponent } from '../mission-map/mission-map.component';
+import { RatingStarsComponent } from '../rating-stars/rating-stars.component';
 import { distanceText } from '../../util/geo';
 
 interface StatTile {
@@ -30,7 +31,7 @@ interface StatTile {
  */
 @Component({
   selector: 'app-mission-list',
-  imports: [CommonModule, RouterLink, ReactiveFormsModule, MissionMapComponent],
+  imports: [CommonModule, RouterLink, ReactiveFormsModule, MissionMapComponent, RatingStarsComponent],
   templateUrl: './mission-list.component.html',
   styleUrl: './mission-list.component.css'
 })
