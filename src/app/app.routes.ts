@@ -7,6 +7,7 @@ import { LoginComponent } from './components/login/login.component';
 import { RegisterComponent } from './components/register/register.component';
 import { LandingComponent } from './components/landing/landing.component';
 import { ProfileComponent } from './components/profile/profile.component';
+import { UserProfileComponent } from './components/user-profile/user-profile.component';
 import { MyBidsComponent } from './components/my-bids/my-bids.component';
 import { authGuard, designerGuard, landingGuard, pilotGuard } from './guards/auth.guard';
 
@@ -34,6 +35,8 @@ export const routes: Routes = [
   { path: 'my-bids', component: MyBidsComponent, canActivate: [authGuard, pilotGuard] },
 
   { path: 'profile', component: ProfileComponent, canActivate: [authGuard] },
+  // Anyone else's profile, reached from a feed card or a mission's rating panel.
+  { path: 'users/:id', component: UserProfileComponent, canActivate: [authGuard] },
 
   { path: '**', redirectTo: '' }
 ];

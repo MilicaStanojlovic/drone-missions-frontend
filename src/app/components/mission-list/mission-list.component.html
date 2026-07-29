@@ -115,7 +115,15 @@
               </div>
             </div>
             <div class="card__foot">
-              <span>Created {{ m.createdAt | date: 'mediumDate' }}</span>
+              @if (m.designerName) {
+                <span class="card__by">by {{ m.designerName }}</span>
+                <app-rating-stars
+                  [average]="m.designerRating ?? 0"
+                  [count]="m.designerRatingCount ?? 0"
+                  [showEmpty]="false"
+                />
+              }
+              <span class="card__created">Created {{ m.createdAt | date: 'mediumDate' }}</span>
             </div>
           </div>
         </a>

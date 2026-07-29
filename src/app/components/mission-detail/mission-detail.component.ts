@@ -17,6 +17,10 @@ import { AuthService } from '../../services/auth.service';
 import { ToastService } from '../../services/toast.service';
 import { MissionMapComponent } from '../mission-map/mission-map.component';
 import { ConfirmDialogComponent } from '../confirm-dialog/confirm-dialog.component';
+import { RatingFormComponent } from '../rating-form/rating-form.component';
+import { RatingNoteComponent } from '../rating-note/rating-note.component';
+import { RatingService } from '../../services/rating.service';
+import { Rating } from '../../models/rating.model';
 import { distanceText, durationText } from '../../util/geo';
 
 interface TimelineStep {
@@ -35,7 +39,14 @@ interface TimelineStep {
  */
 @Component({
   selector: 'app-mission-detail',
-  imports: [CommonModule, RouterLink, MissionMapComponent, ConfirmDialogComponent],
+  imports: [
+    CommonModule,
+    RouterLink,
+    MissionMapComponent,
+    ConfirmDialogComponent,
+    RatingFormComponent,
+    RatingNoteComponent
+  ],
   templateUrl: './mission-detail.component.html',
   styleUrl: './mission-detail.component.css'
 })
@@ -44,6 +55,7 @@ export class MissionDetailComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly missionService = inject(MissionService);
   private readonly bidService = inject(BidService);
+  private readonly ratingService = inject(RatingService);
   private readonly toast = inject(ToastService);
   readonly auth = inject(AuthService);
 
@@ -54,6 +66,8 @@ export class MissionDetailComponent implements OnInit {
   error = false;
   mission: Mission | null = null;
   bids: Bid[] = [];
+  /** Both directions for this mission; empty until it completes. */
+  ratings: Rating[] = [];
 
   /** Where the user came from, so "Back" returns there (e.g. 'my-bids'). */
   from = '';
@@ -90,6 +104,7 @@ export class MissionDetailComponent implements OnInit {
         this.mission = mission;
         this.loading = false;
         this.loadBids(id);
+        this.loadRatings(mission);
       },
       error: () => {
         this.error = true;
@@ -103,6 +118,28 @@ export class MissionDetailComponent implements OnInit {
       next: (bids) => (this.bids = bids),
       error: (err) => console.error('Failed to load bids', err)
     });
+  }
+
+  /**
+   * Only participants may read a mission's ratings, and only a completed mission has any,
+   * so anyone else would just collect a 403.
+   */
+  private loadRatings(mission: Mission): void {
+    if (mission.status !== 'COMPLETED' || !this.isParticipant) {
+      this.ratings = [];
+      return;
+    }
+    this.ratingService.forMission(mission.id).subscribe({
+      next: (ratings) => (this.ratings = ratings),
+      error: (err) => console.error('Failed to load ratings', err)
+    });
+  }
+
+  /** Called when the form reports success — re-reads so the card flips to "you rated". */
+  onRated(): void {
+    if (this.mission) {
+      this.loadRatings(this.mission);
+    }
   }
 
   /** Re-fetch mission + bids in place (no full-page loading flash) after a bid action. */
@@ -142,6 +179,42 @@ export class MissionDetailComponent implements OnInit {
   get canCancel(): boolean {
     return this.isOwner && !['COMPLETED', 'CANCELLED'].includes(this.mission?.status ?? '');
   }
+  // ---- ratings ----
+  /** Either side of this mission — the same test the backend applies. */
+  get isParticipant(): boolean {
+    const id = this.auth.userId;
+    return !!this.mission && (this.mission.userId === id || this.mission.awardedPilotId === id);
+  }
+  /** A completed mission you took part in is rateable, once, by you. */
+  get canRate(): boolean {
+    return this.mission?.status === 'COMPLETED' && this.isParticipant && !this.myRating;
+  }
+  /** What the caller left, if they have rated. */
+  get myRating(): Rating | null {
+    return this.ratings.find((r) => r.raterId === this.auth.userId) ?? null;
+  }
+  /** What the other side left about the caller. */
+  get ratingOfMe(): Rating | null {
+    return this.ratings.find((r) => r.rateeId === this.auth.userId) ?? null;
+  }
+  /** Who the caller is rating: the designer sees the pilot, the pilot sees the designer. */
+  get counterpartName(): string | undefined {
+    if (!this.mission) {
+      return undefined;
+    }
+    return this.isOwner ? this.awardedPilotName : this.mission.designerName;
+  }
+  get counterpartId(): number | null {
+    if (!this.mission) {
+      return null;
+    }
+    return this.isOwner ? this.mission.awardedPilotId ?? null : this.mission.userId;
+  }
+  /** The accepted bid is where the winning pilot's name already lives. */
+  private get awardedPilotName(): string | undefined {
+    return this.bids.find((b) => b.status === 'ACCEPTED')?.pilotName;
+  }
+
   get waypoints(): LatLng[] {
     return this.mission?.waypoints ?? [];
   }
