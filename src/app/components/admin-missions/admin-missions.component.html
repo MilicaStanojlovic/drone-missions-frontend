@@ -1,0 +1,51 @@
+<section class="page">
+  <header class="page__head">
+    <div>
+      <div class="page__eyebrow">PLATFORM ADMIN</div>
+      <h1 class="page__title">All Missions</h1>
+    </div>
+    <input
+      class="page__search"
+      type="text"
+      [formControl]="search"
+      placeholder="Search by mission or designer…"
+    />
+  </header>
+
+  @if (loading) {
+    <p class="page__state">Loading missions…</p>
+  } @else if (error) {
+    <p class="page__state page__state--error">Couldn't load missions. Please try again.</p>
+  } @else if (visibleMissions.length === 0) {
+    <div class="empty">
+      <div class="empty__title">No missions match your search.</div>
+      <div class="empty__sub">Try a different mission name or designer.</div>
+    </div>
+  } @else {
+    <div class="table">
+      <div class="table__head">
+        <span>Mission</span><span>Designer</span><span>Status</span>
+      </div>
+      @for (m of visibleMissions; track m.id) {
+        <div class="table__row">
+          <div class="cell-main">
+            <div class="cell-main__title">{{ m.name }}</div>
+            <div class="cell-main__meta">{{ meta(m) }}</div>
+          </div>
+          <div class="cell-designer">{{ m.designerName || '—' }}</div>
+          <div>
+            <span
+              class="chip"
+              [style.color]="statusColors[m.status]"
+              [style.background]="statusColors[m.status] + '1a'"
+              [style.border-color]="statusColors[m.status] + '55'"
+            >
+              <span class="chip__dot" [style.background]="statusColors[m.status]"></span>
+              {{ statusLabels[m.status] }}
+            </span>
+          </div>
+        </div>
+      }
+    </div>
+  }
+</section>

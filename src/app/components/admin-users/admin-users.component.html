@@ -1,0 +1,45 @@
+<section class="page">
+  <header class="page__head">
+    <div>
+      <div class="page__eyebrow">PLATFORM ADMIN</div>
+      <h1 class="page__title">Users</h1>
+    </div>
+  </header>
+
+  @if (loading) {
+    <p class="page__state">Loading users…</p>
+  } @else if (error) {
+    <p class="page__state page__state--error">Couldn't load users. Please try again.</p>
+  } @else if (users.length === 0) {
+    <div class="empty">
+      <div class="empty__title">No accounts yet</div>
+      <div class="empty__sub">Registered users will appear here.</div>
+    </div>
+  } @else {
+    <div class="table">
+      <div class="table__head">
+        <span>User</span><span>Role</span><span>Joined</span>
+      </div>
+      @for (u of users; track u.id) {
+        <div class="table__row">
+          <div class="cell-main">
+            <div class="cell-main__title">{{ u.username }}</div>
+            <div class="cell-main__meta">{{ u.email }}</div>
+          </div>
+          <div>
+            <span
+              class="chip"
+              [style.color]="roleColors[u.role]"
+              [style.background]="roleColors[u.role] + '1a'"
+              [style.border-color]="roleColors[u.role] + '55'"
+            >
+              <span class="chip__dot" [style.background]="roleColors[u.role]"></span>
+              {{ roleLabels[u.role] }}
+            </span>
+          </div>
+          <div class="cell-joined">{{ u.createdAt | date: 'mediumDate' }}</div>
+        </div>
+      }
+    </div>
+  }
+</section>

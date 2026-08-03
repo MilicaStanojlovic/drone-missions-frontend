@@ -9,7 +9,9 @@ import { LandingComponent } from './components/landing/landing.component';
 import { ProfileComponent } from './components/profile/profile.component';
 import { UserProfileComponent } from './components/user-profile/user-profile.component';
 import { MyBidsComponent } from './components/my-bids/my-bids.component';
-import { authGuard, designerGuard, landingGuard, pilotGuard } from './guards/auth.guard';
+import { AdminMissionsComponent } from './components/admin-missions/admin-missions.component';
+import { AdminUsersComponent } from './components/admin-users/admin-users.component';
+import { adminGuard, authGuard, designerGuard, landingGuard, pilotGuard } from './guards/auth.guard';
 
 export const routes: Routes = [
   // Public landing; logged-in users are redirected to their role home by the guard.
@@ -33,6 +35,10 @@ export const routes: Routes = [
 
   // The pilot's bid history (pilot-only, like the backend's /bids/my).
   { path: 'my-bids', component: MyBidsComponent, canActivate: [authGuard, pilotGuard] },
+
+  // Admin section: every mission and every account (admin-only, like the backend).
+  { path: 'admin/missions', component: AdminMissionsComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/users', component: AdminUsersComponent, canActivate: [authGuard, adminGuard] },
 
   { path: 'profile', component: ProfileComponent, canActivate: [authGuard] },
   // Anyone else's profile, reached from a feed card or a mission's rating panel.
