@@ -18,7 +18,7 @@
   } @else {
     <div class="table">
       <div class="table__head">
-        <span>User</span><span>Role</span><span>Joined</span>
+        <span>User</span><span>Role</span><span>Status</span><span>Joined</span><span class="table__head-action">Action</span>
       </div>
       @for (u of users; track u.id) {
         <div class="table__row">
@@ -37,9 +37,54 @@
               {{ roleLabels[u.role] }}
             </span>
           </div>
+          <div>
+            <span
+              class="chip"
+              [style.color]="u.suspendedAt ? '#e04a3f' : '#12a06a'"
+              [style.background]="(u.suspendedAt ? '#e04a3f' : '#12a06a') + '1a'"
+              [style.border-color]="(u.suspendedAt ? '#e04a3f' : '#12a06a') + '55'"
+            >
+              <span class="chip__dot" [style.background]="u.suspendedAt ? '#e04a3f' : '#12a06a'"></span>
+              {{ u.suspendedAt ? 'Suspended' : 'Active' }}
+            </span>
+          </div>
           <div class="cell-joined">{{ u.createdAt | date: 'mediumDate' }}</div>
+          <div class="cell-action">
+            @if (u.role === 'ADMIN') {
+              <span class="cell-action__none">—</span>
+            } @else if (u.suspendedAt) {
+              <button
+                type="button"
+                class="mod-btn mod-btn--ok"
+                [disabled]="acting === u.id"
+                (click)="reactivate(u)"
+              >Reactivate</button>
+            } @else {
+              <button
+                type="button"
+                class="mod-btn mod-btn--danger"
+                [disabled]="acting === u.id"
+                (click)="askSuspend(u)"
+              >Suspend</button>
+            }
+          </div>
         </div>
       }
     </div>
+    <div class="table__note">
+      Suspending a designer blocks new missions and freezes bidding on their existing ones.
+      Suspending a pilot blocks bidding, awards, and execution of jobs already awarded to them.
+    </div>
   }
 </section>
+
+<app-confirm-dialog
+  [open]="pending !== null"
+  [title]="'Suspend ' + (pending?.username || '') + '?'"
+  [message]="pendingBody"
+  [confirmText]="pendingConfirmText"
+  cancelText="No, keep it"
+  [danger]="true"
+  (confirm)="confirmSuspend()"
+  (cancel)="pending = null"
+/>
