@@ -17,4 +17,14 @@ export class UserService {
   getAll(): Observable<UserResponse[]> {
     return this.http.get<UserResponse[]>(this.baseUrl);
   }
+
+  /** Admin: suspend the account — blocks designing, bidding, awards, execution. */
+  suspend(id: number): Observable<UserResponse> {
+    return this.http.post<UserResponse>(`${this.baseUrl}/${id}/suspend`, {});
+  }
+
+  /** Admin: lift a suspension. */
+  reactivate(id: number): Observable<UserResponse> {
+    return this.http.post<UserResponse>(`${this.baseUrl}/${id}/reactivate`, {});
+  }
 }

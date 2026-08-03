@@ -30,6 +30,8 @@ export interface UserResponse {
   username: string;
   email: string;
   role: UserRole;
+  /** Null when active; the ISO instant of the admin suspension otherwise. */
+  suspendedAt: string | null;
   /** `Instant` serialized as an ISO-8601 string. */
   createdAt: string;
 }

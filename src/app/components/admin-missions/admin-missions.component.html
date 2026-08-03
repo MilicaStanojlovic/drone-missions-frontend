@@ -24,15 +24,24 @@
   } @else {
     <div class="table">
       <div class="table__head">
-        <span>Mission</span><span>Designer</span><span>Status</span>
+        <span>Mission</span><span>Designer</span><span>Status</span><span class="table__head-action">Moderation</span>
       </div>
       @for (m of visibleMissions; track m.id) {
-        <div class="table__row">
+        <div
+          class="table__row"
+          [class.table__row--hidden]="m.moderation === 'HIDDEN'"
+          [class.table__row--removed]="m.moderation === 'REMOVED'"
+        >
           <div class="cell-main">
-            <div class="cell-main__title">{{ m.name }}</div>
+            <div class="cell-main__title" [title]="m.name">{{ m.name }}</div>
             <div class="cell-main__meta">{{ meta(m) }}</div>
           </div>
-          <div class="cell-designer">{{ m.designerName || '—' }}</div>
+          <div class="cell-designer" [title]="m.designerName || ''">
+            {{ m.designerName || '—' }}
+            @if (designerSuspended(m)) {
+              <div class="cell-designer__flag">Suspended</div>
+            }
+          </div>
           <div>
             <span
               class="chip"
@@ -44,8 +53,37 @@
               {{ statusLabels[m.status] }}
             </span>
           </div>
+          <div class="cell-action">
+            <button
+              type="button"
+              class="mod-btn mod-btn--warn"
+              [disabled]="acting === m.id || m.moderation === 'REMOVED'"
+              (click)="onHideClick(m)"
+            >{{ hideLabel(m) }}</button>
+            <button
+              type="button"
+              class="mod-btn mod-btn--danger"
+              [disabled]="acting === m.id"
+              (click)="onRemoveClick(m)"
+            >{{ removeLabel(m) }}</button>
+          </div>
         </div>
       }
     </div>
+    <div class="table__note">
+      Hidden missions stay with their designer but disappear from the pilot feed.
+      Removed missions are withdrawn from the platform entirely — both are reversible.
+    </div>
   }
 </section>
+
+<app-confirm-dialog
+  [open]="pending !== null"
+  [title]="pendingTitle"
+  [message]="pendingBody"
+  [confirmText]="pending?.action === 'remove' ? 'Remove mission' : 'Hide mission'"
+  cancelText="No, keep it"
+  [danger]="pending?.action === 'remove'"
+  (confirm)="confirmPending()"
+  (cancel)="pending = null"
+/>

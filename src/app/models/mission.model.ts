@@ -19,6 +19,13 @@ export const MISSION_STATUSES: readonly MissionStatus[] = [
   'CANCELLED'
 ];
 
+/**
+ * Admin moderation state, orthogonal to the lifecycle status — mirrors the
+ * backend `MissionModeration`. HIDDEN leaves the pilot feed only; REMOVED is
+ * withdrawn for everyone. Both reversible.
+ */
+export type MissionModeration = 'VISIBLE' | 'HIDDEN' | 'REMOVED';
+
 /** Human-friendly labels for display (badges, detail view). */
 export const MISSION_STATUS_LABELS: Record<MissionStatus, string> = {
   DRAFT: 'Draft',
@@ -71,6 +78,8 @@ export interface Mission {
   name: string;
   description: string;
   status: MissionStatus;
+  /** Admin moderation state; 'VISIBLE' for anything untouched by moderation. */
+  moderation: MissionModeration;
   /** Id of the user who created (owns) the mission. Set server-side from the
    *  authenticated principal — used client-side to gate edit/delete to the owner. */
   userId: number;
@@ -108,6 +117,7 @@ export type MissionPayload = Omit<
   | 'designerName'
   | 'designerRating'
   | 'designerRatingCount'
+  | 'moderation'
   | 'createdAt'
   | 'updatedAt'
 >;
