@@ -139,6 +139,9 @@
   font-weight: 600;
   color: #1b2732;
   line-height: 1.35;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .cell-main__meta {
@@ -146,12 +149,18 @@
   font-size: 10.5px;
   color: #93a1b0;
   margin-top: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .cell-designer {
   font-size: 12.5px;
   color: #43525f;
   min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .chip {

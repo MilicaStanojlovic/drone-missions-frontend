@@ -23,8 +23,8 @@
       @for (u of users; track u.id) {
         <div class="table__row">
           <div class="cell-main">
-            <div class="cell-main__title">{{ u.username }}</div>
-            <div class="cell-main__meta">{{ u.email }}</div>
+            <div class="cell-main__title" [title]="u.username">{{ u.username }}</div>
+            <div class="cell-main__meta" [title]="u.email">{{ u.email }}</div>
           </div>
           <div>
             <span

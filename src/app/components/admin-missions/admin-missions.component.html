@@ -33,10 +33,10 @@
           [class.table__row--removed]="m.moderation === 'REMOVED'"
         >
           <div class="cell-main">
-            <div class="cell-main__title">{{ m.name }}</div>
+            <div class="cell-main__title" [title]="m.name">{{ m.name }}</div>
             <div class="cell-main__meta">{{ meta(m) }}</div>
           </div>
-          <div class="cell-designer">
+          <div class="cell-designer" [title]="m.designerName || ''">
             {{ m.designerName || '—' }}
             @if (designerSuspended(m)) {
               <div class="cell-designer__flag">Suspended</div>
