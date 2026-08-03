@@ -39,6 +39,22 @@ export const pilotGuard: CanActivateFn = () => {
 };
 
 /**
+ * Requires a logged-in ADMIN (mirrors the backend `@PreAuthorize("hasRole('ADMIN')")`
+ * on the admin views). Everyone else is bounced to their role home; logged-out
+ * users to login.
+ */
+export const adminGuard: CanActivateFn = () => {
+  const auth = inject(AuthService);
+  const router = inject(Router);
+  if (!auth.isLoggedIn) {
+    return router.createUrlTree(['/login']);
+  }
+  return auth.isAdmin
+    ? true
+    : router.createUrlTree([auth.isDesigner ? '/missions/mine' : '/missions']);
+};
+
+/**
  * The '' route: a logged-in user is sent to their role home (DESIGNER → their
  * missions, PILOT → the open marketplace); a logged-out visitor stays to see
  * the public landing page.
@@ -46,7 +62,11 @@ export const pilotGuard: CanActivateFn = () => {
 export const landingGuard: CanActivateFn = () => {
   const auth = inject(AuthService);
   const router = inject(Router);
-  return auth.isLoggedIn
-    ? router.createUrlTree([auth.isDesigner ? '/missions/mine' : '/missions'])
-    : true;
+  if (!auth.isLoggedIn) {
+    return true;
+  }
+  if (auth.isAdmin) {
+    return router.createUrlTree(['/admin/missions']);
+  }
+  return router.createUrlTree([auth.isDesigner ? '/missions/mine' : '/missions']);
 };

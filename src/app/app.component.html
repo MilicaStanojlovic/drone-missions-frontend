@@ -21,6 +21,10 @@
             >Browse</a>
             <a routerLink="/my-bids" routerLinkActive="nav__link--active" class="nav__link">My Bids</a>
           }
+          @if (auth.isAdmin) {
+            <a routerLink="/admin/missions" routerLinkActive="nav__link--active" class="nav__link">Missions</a>
+            <a routerLink="/admin/users" routerLinkActive="nav__link--active" class="nav__link">Users</a>
+          }
         </nav>
       </div>
 

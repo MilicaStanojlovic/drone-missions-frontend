@@ -99,7 +99,7 @@ export class AuthService {
   /** Current user's role, read from the token's `role` claim. */
   get role(): UserRole | null {
     const role = this.claims()?.['role'];
-    return role === 'DESIGNER' || role === 'PILOT' ? role : null;
+    return role === 'DESIGNER' || role === 'PILOT' || role === 'ADMIN' ? role : null;
   }
 
   get isDesigner(): boolean {
@@ -108,6 +108,10 @@ export class AuthService {
 
   get isPilot(): boolean {
     return this.role === 'PILOT';
+  }
+
+  get isAdmin(): boolean {
+    return this.role === 'ADMIN';
   }
 
   logout(): void {

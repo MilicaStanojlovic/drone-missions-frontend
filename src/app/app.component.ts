@@ -23,11 +23,17 @@ export class AppComponent implements OnInit {
 
   /** Human label for the role chip. */
   get roleLabel(): string {
+    if (this.auth.isAdmin) {
+      return 'Platform Admin';
+    }
     return this.auth.isDesigner ? 'Mission Designer' : this.auth.isPilot ? 'Pilot' : '';
   }
 
-  /** Accent colour for the role chip dot (blue designer, green pilot). */
+  /** Accent colour for the role chip dot (blue designer, green pilot, purple admin). */
   get roleColor(): string {
+    if (this.auth.isAdmin) {
+      return '#6d5ef0';
+    }
     return this.auth.isPilot ? '#12a06a' : '#2f6bff';
   }
 

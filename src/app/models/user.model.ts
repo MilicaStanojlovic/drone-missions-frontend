@@ -9,7 +9,21 @@
  * permanent — mirrors the backend `UserRole` enum. DESIGNER lists and owns
  * missions; PILOT finds work and bids on it.
  */
-export type UserRole = 'DESIGNER' | 'PILOT';
+export type UserRole = 'DESIGNER' | 'PILOT' | 'ADMIN';
+
+/** Chip labels per role — mirrors the design canvas wording. */
+export const USER_ROLE_LABELS: Record<UserRole, string> = {
+  DESIGNER: 'Designer',
+  PILOT: 'Pilot',
+  ADMIN: 'Admin'
+};
+
+/** Accent colour per role — designer blue, pilot green, admin purple. */
+export const USER_ROLE_COLORS: Record<UserRole, string> = {
+  DESIGNER: '#2f6bff',
+  PILOT: '#12a06a',
+  ADMIN: '#6d5ef0'
+};
 
 export interface UserResponse {
   id: number;
