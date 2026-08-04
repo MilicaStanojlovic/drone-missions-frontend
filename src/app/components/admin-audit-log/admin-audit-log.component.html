@@ -7,6 +7,33 @@
     </div>
   </header>
 
+  <div class="toolbar">
+    <div class="seg">
+      @for (s of segments; track s.value) {
+        <button
+          type="button"
+          class="seg__btn"
+          [class.seg__btn--active]="filterForm.controls.role.value === s.value"
+          (click)="setRole(s.value)"
+        >{{ s.label }}</button>
+      }
+    </div>
+    <div class="toolbar__right">
+      <select class="toolbar__select" [formControl]="filterForm.controls.action">
+        <option value="">All actions</option>
+        @for (a of actionOptions; track a) {
+          <option [value]="a">{{ actionLabels[a] }}</option>
+        }
+      </select>
+      <input
+        class="toolbar__search"
+        type="text"
+        placeholder="Search by user or detail…"
+        [formControl]="filterForm.controls.q"
+      />
+    </div>
+  </div>
+
   @if (loading) {
     <p class="page__state">Loading activity…</p>
   } @else if (error) {
@@ -14,7 +41,9 @@
   } @else {
     <div class="feed">
       @if (entries.length === 0) {
-        <div class="feed__empty">No actions recorded yet.</div>
+        <div class="feed__empty">
+          {{ hasActiveFilters ? 'No actions match your filters.' : 'No actions recorded yet.' }}
+        </div>
       } @else {
         @for (a of entries; track a.id) {
           <div class="row">
