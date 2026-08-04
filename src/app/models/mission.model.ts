@@ -21,10 +21,10 @@ export const MISSION_STATUSES: readonly MissionStatus[] = [
 
 /**
  * Admin moderation state, orthogonal to the lifecycle status — mirrors the
- * backend `MissionModeration`. HIDDEN leaves the pilot feed only; REMOVED is
- * withdrawn for everyone. Both reversible.
+ * backend `MissionModeration`. HIDDEN leaves the pilot feed only (reversible);
+ * admin removal is a permanent delete, not a state.
  */
-export type MissionModeration = 'VISIBLE' | 'HIDDEN' | 'REMOVED';
+export type MissionModeration = 'VISIBLE' | 'HIDDEN';
 
 /** Human-friendly labels for display (badges, detail view). */
 export const MISSION_STATUS_LABELS: Record<MissionStatus, string> = {
