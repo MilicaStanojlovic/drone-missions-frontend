@@ -58,7 +58,7 @@ export class AdminMissionsComponent implements OnInit {
     // Best-effort: the suspended flag under designer names. The list still renders without it.
     this.userService.getAll().subscribe({
       next: (users) => {
-        this.suspendedDesigners = new Set(users.filter((u) => u.suspendedAt).map((u) => u.id));
+        this.suspendedDesigners = new Set(users.filter((u) => u.suspended).map((u) => u.id));
       },
       error: (err) => console.error(err)
     });
@@ -85,11 +85,7 @@ export class AdminMissionsComponent implements OnInit {
     return mission.moderation === 'HIDDEN' ? 'Unhide' : 'Hide';
   }
 
-  removeLabel(mission: Mission): string {
-    return mission.moderation === 'REMOVED' ? 'Restore' : 'Remove';
-  }
-
-  /** Hide and remove confirm first; unhide and restore fire directly (both reversible). */
+  /** Hide and remove confirm first; unhide fires directly (reversible). */
   onHideClick(mission: Mission): void {
     if (mission.moderation === 'HIDDEN') {
       this.act(mission, 'unhide');
@@ -99,15 +95,11 @@ export class AdminMissionsComponent implements OnInit {
   }
 
   onRemoveClick(mission: Mission): void {
-    if (mission.moderation === 'REMOVED') {
-      this.act(mission, 'restore');
-    } else {
-      this.pending = { mission, action: 'remove' };
-    }
+    this.pending = { mission, action: 'remove' };
   }
 
   get pendingTitle(): string {
-    return this.pending?.action === 'remove' ? 'Remove this mission?' : 'Hide this mission?';
+    return this.pending?.action === 'remove' ? 'Delete this mission?' : 'Hide this mission?';
   }
 
   /** Consequence text per action, worded as in the design canvas. */
@@ -117,25 +109,47 @@ export class AdminMissionsComponent implements OnInit {
     }
     const name = this.pending.mission.name;
     return this.pending.action === 'remove'
-      ? `“${name}” will be withdrawn from the platform for everyone, including its designer. You can restore it later from this list.`
+      ? `“${name}” will be permanently deleted, along with its bids and ratings. This cannot be undone.`
       : `“${name}” will disappear from the pilot feed and stop receiving new bids. Its designer keeps it and can still see it.`;
   }
 
   confirmPending(): void {
     const pending = this.pending;
     this.pending = null;
-    if (pending) {
-      this.act(pending.mission, pending.action);
+    if (!pending) {
+      return;
+    }
+    if (pending.action === 'remove') {
+      this.removeMission(pending.mission);
+    } else {
+      this.act(pending.mission, 'hide');
     }
   }
 
-  private act(mission: Mission, action: 'hide' | 'unhide' | 'remove' | 'restore'): void {
+  /** Permanent delete: 204 comes back, so the row is dropped rather than replaced. */
+  private removeMission(mission: Mission): void {
+    this.acting = mission.id;
+    this.missionService.remove(mission.id).subscribe({
+      next: () => {
+        this.missions = this.missions.filter((m) => m.id !== mission.id);
+        this.acting = null;
+        this.toast.show(`Deleted — ${mission.name.slice(0, 34)}`, '#e04a3f');
+      },
+      error: (err) => {
+        console.error(err);
+        this.acting = null;
+        this.toast.show(this.serverMessage(err, `Couldn't delete this mission`), '#e04a3f');
+      }
+    });
+  }
+
+  private act(mission: Mission, action: 'hide' | 'unhide'): void {
     this.acting = mission.id;
     this.missionService[action](mission.id).subscribe({
       next: (updated) => {
         this.missions = this.missions.map((m) => (m.id === updated.id ? updated : m));
         this.acting = null;
-        this.toast.show(`${this.actionLabel(action)} — ${updated.name.slice(0, 34)}`, this.actionColor(action));
+        this.toast.show(`${this.actionLabel(action)} — ${updated.name.slice(0, 34)}`, '#d9860a');
       },
       error: (err) => {
         console.error(err);
@@ -146,11 +160,7 @@ export class AdminMissionsComponent implements OnInit {
   }
 
   private actionLabel(action: string): string {
-    return { hide: 'Hidden', unhide: 'Back in the feed', remove: 'Removed', restore: 'Restored' }[action] ?? action;
-  }
-
-  private actionColor(action: string): string {
-    return action === 'remove' ? '#e04a3f' : action === 'restore' ? '#12a06a' : '#d9860a';
+    return { hide: 'Hidden', unhide: 'Back in the feed' }[action] ?? action;
   }
 
   /** "Novi Sad · Aug 12 – Aug 14", degrading gracefully when fields are unset. */

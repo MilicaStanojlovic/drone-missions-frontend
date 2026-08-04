@@ -107,10 +107,6 @@
   opacity: 0.75;
 }
 
-.table__row--removed {
-  opacity: 0.5;
-}
-
 .table__head {
   border-bottom: 1px solid #e8edf2;
   background: #f7f9fb;

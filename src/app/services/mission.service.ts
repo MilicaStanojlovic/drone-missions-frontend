@@ -67,14 +67,9 @@ export class MissionService {
     return this.http.post<Mission>(`${this.baseUrl}/${id}/unhide`, {});
   }
 
-  /** Admin: withdraw the mission from the platform entirely (reversible). */
-  remove(id: number): Observable<Mission> {
-    return this.http.post<Mission>(`${this.baseUrl}/${id}/remove`, {});
-  }
-
-  /** Admin: bring a removed mission back as visible. */
-  restore(id: number): Observable<Mission> {
-    return this.http.post<Mission>(`${this.baseUrl}/${id}/restore`, {});
+  /** Admin: permanently delete the mission — bids and ratings go with it (204). */
+  remove(id: number): Observable<void> {
+    return this.http.post<void>(`${this.baseUrl}/${id}/remove`, {});
   }
 
   getById(id: number): Observable<Mission> {

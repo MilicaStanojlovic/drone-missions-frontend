@@ -30,7 +30,6 @@
         <div
           class="table__row"
           [class.table__row--hidden]="m.moderation === 'HIDDEN'"
-          [class.table__row--removed]="m.moderation === 'REMOVED'"
         >
           <div class="cell-main">
             <div class="cell-main__title" [title]="m.name">{{ m.name }}</div>
@@ -57,7 +56,7 @@
             <button
               type="button"
               class="mod-btn mod-btn--warn"
-              [disabled]="acting === m.id || m.moderation === 'REMOVED'"
+              [disabled]="acting === m.id"
               (click)="onHideClick(m)"
             >{{ hideLabel(m) }}</button>
             <button
@@ -65,14 +64,14 @@
               class="mod-btn mod-btn--danger"
               [disabled]="acting === m.id"
               (click)="onRemoveClick(m)"
-            >{{ removeLabel(m) }}</button>
+            >Remove</button>
           </div>
         </div>
       }
     </div>
     <div class="table__note">
-      Hidden missions stay with their designer but disappear from the pilot feed.
-      Removed missions are withdrawn from the platform entirely — both are reversible.
+      Hidden missions stay with their designer but disappear from the pilot feed — reversible.
+      Removing a mission permanently deletes it, along with its bids and ratings.
     </div>
   }
 </section>
@@ -81,7 +80,7 @@
   [open]="pending !== null"
   [title]="pendingTitle"
   [message]="pendingBody"
-  [confirmText]="pending?.action === 'remove' ? 'Remove mission' : 'Hide mission'"
+  [confirmText]="pending?.action === 'remove' ? 'Delete mission' : 'Hide mission'"
   cancelText="No, keep it"
   [danger]="pending?.action === 'remove'"
   (confirm)="confirmPending()"
