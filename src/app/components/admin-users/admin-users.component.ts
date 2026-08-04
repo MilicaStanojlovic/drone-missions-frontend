@@ -10,7 +10,6 @@ import {
   UserResponse
 } from '../../models/user.model';
 
-/** Admin view: every account, with suspend/reactivate moderation actions. */
 @Component({
   selector: 'app-admin-users',
   imports: [CommonModule, ConfirmDialogComponent],
@@ -28,9 +27,9 @@ export class AdminUsersComponent implements OnInit {
   error = false;
   users: UserResponse[] = [];
 
-  /** The user a suspend confirmation is open for; null when the dialog is closed. */
+  /** Suspend awaiting confirmation; null = dialog closed. */
   pending: UserResponse | null = null;
-  /** Id of the row whose action call is in flight, to disable its button. */
+  /** Row with a call in flight, to disable its button. */
   acting: number | null = null;
 
   ngOnInit(): void {

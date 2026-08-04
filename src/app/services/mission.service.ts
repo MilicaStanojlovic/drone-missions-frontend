@@ -57,22 +57,18 @@ export class MissionService {
     return this.http.post<Mission>(`${this.baseUrl}/${id}/cancel`, {});
   }
 
-  /** Admin: pull the mission from the pilot feed (reversible). */
   hide(id: number): Observable<Mission> {
     return this.http.post<Mission>(`${this.baseUrl}/${id}/hide`, {});
   }
 
-  /** Admin: return a hidden mission to the feed. */
   unhide(id: number): Observable<Mission> {
     return this.http.post<Mission>(`${this.baseUrl}/${id}/unhide`, {});
   }
 
-  /** Admin: withdraw the mission from the platform entirely (reversible). */
   remove(id: number): Observable<Mission> {
     return this.http.post<Mission>(`${this.baseUrl}/${id}/remove`, {});
   }
 
-  /** Admin: bring a removed mission back as visible. */
   restore(id: number): Observable<Mission> {
     return this.http.post<Mission>(`${this.baseUrl}/${id}/restore`, {});
   }

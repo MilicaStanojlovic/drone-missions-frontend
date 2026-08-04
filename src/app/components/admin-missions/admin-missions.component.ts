@@ -12,10 +12,7 @@ import {
   Mission
 } from '../../models/mission.model';
 
-/**
- * Admin view: every mission on the platform, with hide/remove moderation.
- * The backend returns the full set on GET /missions when the caller is an admin.
- */
+/** The backend returns every mission on GET /missions when the caller is an admin. */
 @Component({
   selector: 'app-admin-missions',
   imports: [CommonModule, ReactiveFormsModule, ConfirmDialogComponent],
@@ -35,12 +32,11 @@ export class AdminMissionsComponent implements OnInit {
   error = false;
   missions: Mission[] = [];
 
-  /** Designer ids that are currently suspended, for the row flag. */
   private suspendedDesigners = new Set<number>();
 
-  /** Mission a hide/remove confirmation is open for, and which action it is. */
+  /** Hide/remove awaiting confirmation; null = dialog closed. */
   pending: { mission: Mission; action: 'hide' | 'remove' } | null = null;
-  /** Id of the row whose action call is in flight, to disable its buttons. */
+  /** Row with a call in flight, to disable its buttons. */
   acting: number | null = null;
 
   ngOnInit(): void {
@@ -64,7 +60,6 @@ export class AdminMissionsComponent implements OnInit {
     });
   }
 
-  /** Client-side narrowing by mission name or designer, per the design's search box. */
   get visibleMissions(): Mission[] {
     const term = this.search.value.trim().toLowerCase();
     if (!term) {
@@ -153,7 +148,6 @@ export class AdminMissionsComponent implements OnInit {
     return action === 'remove' ? '#e04a3f' : action === 'restore' ? '#12a06a' : '#d9860a';
   }
 
-  /** "Novi Sad · Aug 12 – Aug 14", degrading gracefully when fields are unset. */
   meta(mission: Mission): string {
     const parts: string[] = [mission.location?.trim() || 'No location'];
     if (mission.startTime && mission.endTime) {
