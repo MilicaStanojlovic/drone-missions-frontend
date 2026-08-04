@@ -2,7 +2,7 @@ import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 import { PlatformStatsService } from '../../services/platform-stats.service';
-import { PlatformStats } from '../../models/stats.model';
+import { PlatformStats, TopMission } from '../../models/stats.model';
 import {
   MISSION_STATUSES,
   MISSION_STATUS_COLORS,
@@ -61,5 +61,23 @@ export class AdminOverviewComponent implements OnInit {
   statusWidth(count: number): string {
     const max = Math.max(1, ...Object.values(this.stats?.missionsByStatus ?? {}));
     return (count / max) * 100 + '%';
+  }
+
+  bidBarHeight(top: TopMission): string {
+    const max = Math.max(1, ...(this.stats?.topMissionsByBids ?? []).map((t) => t.bids));
+    return (top.bids / max) * 100 + '%';
+  }
+
+  barLabel(name: string): string {
+    return name.split(' — ')[0].slice(0, 24);
+  }
+
+  get totalUsers(): number {
+    return Object.values(this.stats?.usersByRole ?? {}).reduce((a, b) => a + b, 0);
+  }
+
+  /** User-base bars are shares of ALL users, so the rows read as a split. */
+  roleShare(count: number): string {
+    return (count / Math.max(1, this.totalUsers)) * 100 + '%';
   }
 }

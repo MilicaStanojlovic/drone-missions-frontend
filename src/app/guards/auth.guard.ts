@@ -66,7 +66,7 @@ export const landingGuard: CanActivateFn = () => {
     return true;
   }
   if (auth.isAdmin) {
-    return router.createUrlTree(['/admin/missions']);
+    return router.createUrlTree(['/admin/overview']);
   }
   return router.createUrlTree([auth.isDesigner ? '/missions/mine' : '/missions']);
 };

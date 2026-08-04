@@ -38,24 +38,69 @@
       </div>
     </div>
 
-    <div class="panel">
-      <div class="panel__title">MISSIONS BY STATUS</div>
-      <div class="bars">
-        @for (s of statuses; track s) {
-          <div class="bars__row">
-            <span class="bars__label">{{ statusLabels[s] }}</span>
-            <div class="bars__track">
-              @if (stats.missionsByStatus[s] > 0) {
-                <div
-                  class="bars__fill"
-                  [style.width]="statusWidth(stats.missionsByStatus[s])"
-                  [style.background]="statusColors[s]"
-                ></div>
-              }
+    <div class="panels">
+      <div class="panel">
+        <div class="panel__title">MISSIONS BY STATUS</div>
+        <div class="bars">
+          @for (s of statuses; track s) {
+            <div class="bars__row">
+              <span class="bars__label">{{ statusLabels[s] }}</span>
+              <div class="bars__track">
+                @if (stats.missionsByStatus[s] > 0) {
+                  <div
+                    class="bars__fill"
+                    [style.width]="statusWidth(stats.missionsByStatus[s])"
+                    [style.background]="statusColors[s]"
+                  ></div>
+                }
+              </div>
+              <span class="bars__count">{{ stats.missionsByStatus[s] }}</span>
             </div>
-            <span class="bars__count">{{ stats.missionsByStatus[s] }}</span>
+          }
+        </div>
+      </div>
+
+      <div class="panel panel--columns">
+        <div class="panel__title">BIDS PER MISSION</div>
+        @if (stats.topMissionsByBids.length > 0) {
+          <div class="cols">
+            @for (top of stats.topMissionsByBids; track top.name) {
+              <div class="cols__col">
+                <span class="cols__value">{{ top.bids }}</span>
+                <div class="cols__barwrap">
+                  <div class="cols__bar" [style.height]="bidBarHeight(top)"></div>
+                </div>
+                <span class="cols__label" [title]="top.name">{{ barLabel(top.name) }}</span>
+              </div>
+            }
           </div>
+        } @else {
+          <div class="cols__empty">No bids yet</div>
         }
+      </div>
+    </div>
+
+    <div class="panel panel--wide">
+      <div class="panel__title">USER BASE</div>
+      <div class="roles">
+        <div class="roles__row">
+          <span class="roles__label">Designers</span>
+          <div class="roles__track">
+            @if (stats.usersByRole['DESIGNER'] > 0) {
+              <div class="roles__fill roles__fill--designer" [style.width]="roleShare(stats.usersByRole['DESIGNER'])"></div>
+            }
+          </div>
+          <span class="bars__count">{{ stats.usersByRole['DESIGNER'] }}</span>
+        </div>
+        <div class="roles__row">
+          <span class="roles__label">Pilots</span>
+          <div class="roles__track">
+            @if (stats.usersByRole['PILOT'] > 0) {
+              <div class="roles__fill roles__fill--pilot" [style.width]="roleShare(stats.usersByRole['PILOT'])"></div>
+            }
+          </div>
+          <span class="bars__count">{{ stats.usersByRole['PILOT'] }}</span>
+        </div>
       </div>
     </div>
   }
