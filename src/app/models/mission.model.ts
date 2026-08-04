@@ -80,6 +80,8 @@ export interface Mission {
   status: MissionStatus;
   /** Admin moderation state; 'VISIBLE' for anything untouched by moderation. */
   moderation: MissionModeration;
+  /** Whether the mission's designer is currently suspended (admin views). */
+  designerSuspended: boolean;
   /** Id of the user who created (owns) the mission. Set server-side from the
    *  authenticated principal — used client-side to gate edit/delete to the owner. */
   userId: number;
@@ -115,6 +117,7 @@ export type MissionPayload = Omit<
   | 'userId'
   | 'designerEmail'
   | 'designerName'
+  | 'designerSuspended'
   | 'designerRating'
   | 'designerRatingCount'
   | 'moderation'
