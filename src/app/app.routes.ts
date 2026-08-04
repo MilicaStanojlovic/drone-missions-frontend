@@ -13,6 +13,7 @@ import { AdminMissionsComponent } from './components/admin-missions/admin-missio
 import { AdminUsersComponent } from './components/admin-users/admin-users.component';
 import { AdminAuditLogComponent } from './components/admin-audit-log/admin-audit-log.component';
 import { AdminOverviewComponent } from './components/admin-overview/admin-overview.component';
+import { AdminRegisterComponent } from './components/admin-register/admin-register.component';
 import { adminGuard, authGuard, designerGuard, landingGuard, pilotGuard } from './guards/auth.guard';
 
 export const routes: Routes = [
@@ -42,6 +43,7 @@ export const routes: Routes = [
   { path: 'admin/overview', component: AdminOverviewComponent, canActivate: [authGuard, adminGuard] },
   { path: 'admin/missions', component: AdminMissionsComponent, canActivate: [authGuard, adminGuard] },
   { path: 'admin/users', component: AdminUsersComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/users/new', component: AdminRegisterComponent, canActivate: [authGuard, adminGuard] },
   { path: 'admin/audit-log', component: AdminAuditLogComponent, canActivate: [authGuard, adminGuard] },
 
   { path: 'profile', component: ProfileComponent, canActivate: [authGuard] },

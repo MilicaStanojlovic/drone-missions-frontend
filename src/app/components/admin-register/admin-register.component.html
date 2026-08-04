@@ -1,0 +1,68 @@
+<section class="page">
+  <header class="page__head">
+    <div>
+      <div class="page__eyebrow">PLATFORM ADMIN</div>
+      <h1 class="page__title">New Admin</h1>
+      <p class="page__sub">Create another administrator account.</p>
+    </div>
+  </header>
+
+  <form class="panel" [formGroup]="form" (ngSubmit)="submit()">
+    @if (submitError) {
+      <div class="panel__error" role="alert">{{ submitError }}</div>
+    }
+
+    <div class="field">
+      <label class="field__label" for="username">Username</label>
+      <input
+        id="username"
+        class="field__input"
+        type="text"
+        formControlName="username"
+        [class.field__input--invalid]="form.controls.username.touched && form.controls.username.invalid"
+      />
+      @if (form.controls.username.touched && form.controls.username.hasError('required')) {
+        <p class="field__error">Username is required.</p>
+      }
+    </div>
+
+    <div class="field">
+      <label class="field__label" for="email">Email</label>
+      <input
+        id="email"
+        class="field__input"
+        type="email"
+        formControlName="email"
+        [class.field__input--invalid]="form.controls.email.touched && form.controls.email.invalid"
+      />
+      @if (form.controls.email.touched && form.controls.email.hasError('required')) {
+        <p class="field__error">Email is required.</p>
+      } @else if (form.controls.email.touched && form.controls.email.hasError('email')) {
+        <p class="field__error">Enter a valid email address.</p>
+      }
+    </div>
+
+    <div class="field">
+      <label class="field__label" for="password">Initial password</label>
+      <input
+        id="password"
+        class="field__input"
+        type="password"
+        formControlName="password"
+        [class.field__input--invalid]="form.controls.password.touched && form.controls.password.invalid"
+      />
+      @if (form.controls.password.touched && form.controls.password.hasError('required')) {
+        <p class="field__error">Password is required.</p>
+      } @else if (form.controls.password.touched && form.controls.password.hasError('minlength')) {
+        <p class="field__error">Password must be at least 8 characters.</p>
+      }
+    </div>
+
+    <div class="actions">
+      <a class="actions__cancel" routerLink="/admin/users">Cancel</a>
+      <button class="actions__submit" type="submit" [disabled]="submitting">
+        {{ submitting ? 'Creating…' : 'Create admin' }}
+      </button>
+    </div>
+  </form>
+</section>

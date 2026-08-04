@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
-import { UserResponse } from '../models/user.model';
+import { NewAdminPayload, UserResponse } from '../models/user.model';
 
 /**
  * User listing against `/api/v1/users`. Profile and auth flows stay in
@@ -26,5 +26,10 @@ export class UserService {
   /** Admin: lift a suspension. */
   reactivate(id: number): Observable<UserResponse> {
     return this.http.post<UserResponse>(`${this.baseUrl}/${id}/reactivate`, {});
+  }
+
+  /** Admin: register another admin account (role is forced server-side). */
+  createAdmin(payload: NewAdminPayload): Observable<UserResponse> {
+    return this.http.post<UserResponse>(`${this.baseUrl}/admins`, payload);
   }
 }
