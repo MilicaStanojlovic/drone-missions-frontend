@@ -1,0 +1,62 @@
+<section class="page">
+  <header class="page__head">
+    <div>
+      <div class="page__eyebrow">PLATFORM ADMIN</div>
+      <h1 class="page__title">Platform Overview</h1>
+    </div>
+  </header>
+
+  @if (loading) {
+    <p class="page__state">Loading stats…</p>
+  } @else if (error) {
+    <p class="page__state page__state--error">Couldn't load the platform stats. Please try again.</p>
+  } @else if (stats) {
+    <div class="tiles">
+      <div class="tile">
+        <div class="tile__num">{{ totalMissions }}</div>
+        <div class="tile__label">Total missions</div>
+      </div>
+      <div class="tile">
+        <div class="tile__num tile__num--ok">{{ stats.activePilots }}</div>
+        <div class="tile__label">Active pilots</div>
+      </div>
+      <div class="tile">
+        <div class="tile__num tile__num--danger">{{ stats.suspendedUsers }}</div>
+        <div class="tile__label">Suspended</div>
+      </div>
+      <div class="tile">
+        <div class="tile__num tile__num--amber">{{ stats.bidCount }}</div>
+        <div class="tile__label">Total bids</div>
+      </div>
+      <div class="tile">
+        <div class="tile__num tile__num--violet">{{ bidVolumeText }}</div>
+        <div class="tile__label">Bid volume</div>
+      </div>
+      <div class="tile">
+        <div class="tile__num tile__num--teal">{{ avgBidText }}</div>
+        <div class="tile__label">Avg bid</div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel__title">MISSIONS BY STATUS</div>
+      <div class="bars">
+        @for (s of statuses; track s) {
+          <div class="bars__row">
+            <span class="bars__label">{{ statusLabels[s] }}</span>
+            <div class="bars__track">
+              @if (stats.missionsByStatus[s] > 0) {
+                <div
+                  class="bars__fill"
+                  [style.width]="statusWidth(stats.missionsByStatus[s])"
+                  [style.background]="statusColors[s]"
+                ></div>
+              }
+            </div>
+            <span class="bars__count">{{ stats.missionsByStatus[s] }}</span>
+          </div>
+        }
+      </div>
+    </div>
+  }
+</section>
