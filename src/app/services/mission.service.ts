@@ -3,6 +3,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
 import { Mission, MissionPayload } from '../models/mission.model';
+import { PagedModel } from '../models/page.model';
 
 /** Optional server-side filters for the open feed. `date` is a `yyyy-MM-dd` string. */
 export interface FeedFilters {
@@ -30,6 +31,18 @@ export class MissionService {
       params = params.set('date', filters.date);
     }
     return this.http.get<Mission[]>(this.baseUrl, { params });
+  }
+
+  /** Admin: one page of every mission, newest first, optionally narrowed by name/designer. */
+  adminList(query: { q?: string; page?: number } = {}): Observable<PagedModel<Mission>> {
+    let params = new HttpParams();
+    if (query.page && query.page > 0) {
+      params = params.set('page', query.page);
+    }
+    if (query.q?.trim()) {
+      params = params.set('q', query.q.trim());
+    }
+    return this.http.get<PagedModel<Mission>>(`${this.baseUrl}/all`, { params });
   }
 
   /** Only the missions created by the current user. */

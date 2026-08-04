@@ -1,9 +1,10 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule, formatDate } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
+import { ActivatedRoute, Params, Router } from '@angular/router';
+import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
 
 import { MissionService } from '../../services/mission.service';
-import { UserService } from '../../services/user.service';
 import { ToastService } from '../../services/toast.service';
 import { ConfirmDialogComponent } from '../confirm-dialog/confirm-dialog.component';
 import {
@@ -14,7 +15,7 @@ import {
 
 /**
  * Admin view: every mission on the platform, with hide/remove moderation.
- * The backend returns the full set on GET /missions when the caller is an admin.
+ * Paged and searched server-side against GET /missions/all.
  */
 @Component({
   selector: 'app-admin-missions',
@@ -24,8 +25,9 @@ import {
 })
 export class AdminMissionsComponent implements OnInit {
   private readonly missionService = inject(MissionService);
-  private readonly userService = inject(UserService);
   private readonly toast = inject(ToastService);
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
 
   readonly statusLabels = MISSION_STATUS_LABELS;
   readonly statusColors = MISSION_STATUS_COLORS;
@@ -34,9 +36,10 @@ export class AdminMissionsComponent implements OnInit {
   loading = true;
   error = false;
   missions: Mission[] = [];
-
-  /** Designer ids that are currently suspended, for the row flag. */
-  private suspendedDesigners = new Set<number>();
+  /** 0-based, as the backend counts; the URL carries it 1-based. */
+  pageIndex = 0;
+  totalPages = 0;
+  totalElements = 0;
 
   /** Mission a hide/remove confirmation is open for, and which action it is. */
   pending: { mission: Mission; action: 'hide' | 'remove' } | null = null;
@@ -44,41 +47,35 @@ export class AdminMissionsComponent implements OnInit {
   acting: number | null = null;
 
   ngOnInit(): void {
-    this.missionService.getAll().subscribe({
-      next: (missions) => {
-        this.missions = missions;
-        this.loading = false;
-      },
-      error: (err) => {
-        console.error(err);
-        this.error = true;
-        this.loading = false;
-      }
-    });
-    // Best-effort: the suspended flag under designer names. The list still renders without it.
-    this.userService.getAll().subscribe({
-      next: (users) => {
-        this.suspendedDesigners = new Set(users.filter((u) => u.suspended).map((u) => u.id));
-      },
-      error: (err) => console.error(err)
-    });
+    // Seed from the URL so a deep link restores the search and page.
+    const qp = this.route.snapshot.queryParamMap;
+    const page = Number(qp.get('page'));
+    this.search.setValue(qp.get('q') ?? '');
+    this.pageIndex = Number.isInteger(page) && page > 1 ? page - 1 : 0;
+
+    this.search.valueChanges
+      .pipe(debounceTime(300), distinctUntilChanged())
+      .subscribe(() => {
+        this.pageIndex = 0;
+        this.load();
+        this.syncUrl();
+      });
+    this.load();
   }
 
-  /** Client-side narrowing by mission name or designer, per the design's search box. */
-  get visibleMissions(): Mission[] {
-    const term = this.search.value.trim().toLowerCase();
-    if (!term) {
-      return this.missions;
-    }
-    return this.missions.filter(
-      (m) =>
-        m.name.toLowerCase().includes(term) ||
-        (m.designerName ?? '').toLowerCase().includes(term)
-    );
+  get lastPageIndex(): number {
+    return Math.max(this.totalPages - 1, 0);
   }
 
-  designerSuspended(mission: Mission): boolean {
-    return mission.userId != null && this.suspendedDesigners.has(mission.userId);
+  goTo(index: number): void {
+    this.pageIndex = index;
+    this.load();
+    // Page steps are real history entries — Back should walk pages.
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { page: index === 0 ? null : index + 1 },
+      queryParamsHandling: 'merge'
+    });
   }
 
   hideLabel(mission: Mission): string {
@@ -126,12 +123,45 @@ export class AdminMissionsComponent implements OnInit {
     }
   }
 
+  private load(): void {
+    this.loading = true;
+    this.error = false;
+    this.missionService.adminList({ q: this.search.value, page: this.pageIndex }).subscribe({
+      next: (page) => {
+        this.missions = page.content;
+        this.pageIndex = page.page.number;
+        this.totalPages = page.page.totalPages;
+        this.totalElements = page.page.totalElements;
+        this.loading = false;
+      },
+      error: (err) => {
+        console.error(err);
+        this.error = true;
+        this.loading = false;
+      }
+    });
+  }
+
+  /** Search changes rewrite the query string wholesale, which also drops `page`. */
+  private syncUrl(): void {
+    const params: Params = {};
+    if (this.search.value.trim()) {
+      params['q'] = this.search.value.trim();
+    }
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: params,
+      replaceUrl: true
+    });
+  }
+
   /** Permanent delete: 204 comes back, so the row is dropped rather than replaced. */
   private removeMission(mission: Mission): void {
     this.acting = mission.id;
     this.missionService.remove(mission.id).subscribe({
       next: () => {
         this.missions = this.missions.filter((m) => m.id !== mission.id);
+        this.totalElements = Math.max(0, this.totalElements - 1);
         this.acting = null;
         this.toast.show(`Deleted — ${mission.name.slice(0, 34)}`, '#e04a3f');
       },

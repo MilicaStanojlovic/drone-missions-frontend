@@ -16,17 +16,17 @@
     <p class="page__state">Loading missions…</p>
   } @else if (error) {
     <p class="page__state page__state--error">Couldn't load missions. Please try again.</p>
-  } @else if (visibleMissions.length === 0) {
+  } @else if (missions.length === 0) {
     <div class="empty">
-      <div class="empty__title">No missions match your search.</div>
-      <div class="empty__sub">Try a different mission name or designer.</div>
+      <div class="empty__title">{{ search.value.trim() ? 'No missions match your search.' : 'No missions yet.' }}</div>
+      <div class="empty__sub">{{ search.value.trim() ? 'Try a different mission name or designer.' : 'Created missions will appear here.' }}</div>
     </div>
   } @else {
     <div class="table">
       <div class="table__head">
         <span>Mission</span><span>Designer</span><span>Status</span><span class="table__head-action">Moderation</span>
       </div>
-      @for (m of visibleMissions; track m.id) {
+      @for (m of missions; track m.id) {
         <div
           class="table__row"
           [class.table__row--hidden]="m.moderation === 'HIDDEN'"
@@ -37,7 +37,7 @@
           </div>
           <div class="cell-designer" [title]="m.designerName || ''">
             {{ m.designerName || '—' }}
-            @if (designerSuspended(m)) {
+            @if (m.designerSuspended) {
               <div class="cell-designer__flag">Suspended</div>
             }
           </div>
@@ -68,6 +68,23 @@
           </div>
         </div>
       }
+    </div>
+    <div class="pager">
+      <button
+        type="button"
+        class="pager__btn"
+        [disabled]="pageIndex === 0"
+        (click)="goTo(pageIndex - 1)"
+      >‹ Prev</button>
+      <span class="pager__info">
+        Page {{ pageIndex + 1 }} of {{ lastPageIndex + 1 }} · {{ totalElements }} missions
+      </span>
+      <button
+        type="button"
+        class="pager__btn"
+        [disabled]="pageIndex >= lastPageIndex"
+        (click)="goTo(pageIndex + 1)"
+      >Next ›</button>
     </div>
     <div class="table__note">
       Hidden missions stay with their designer but disappear from the pilot feed — reversible.

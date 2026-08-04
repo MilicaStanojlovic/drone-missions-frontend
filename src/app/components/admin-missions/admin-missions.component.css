@@ -107,6 +107,43 @@
   opacity: 0.75;
 }
 
+.pager {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.pager__btn {
+  background: #ffffff;
+  border: 1px solid #dbe2ea;
+  color: #5c6b7a;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 7px 13px;
+  border-radius: 7px;
+  cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease;
+}
+
+.pager__btn:hover:enabled {
+  border-color: #c3ccd6;
+  color: #1b2732;
+}
+
+.pager__btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.pager__info {
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: 12px;
+  color: #93a1b0;
+}
+
 .table__head {
   border-bottom: 1px solid #e8edf2;
   background: #f7f9fb;
