@@ -11,6 +11,7 @@ import { UserProfileComponent } from './components/user-profile/user-profile.com
 import { MyBidsComponent } from './components/my-bids/my-bids.component';
 import { AdminMissionsComponent } from './components/admin-missions/admin-missions.component';
 import { AdminUsersComponent } from './components/admin-users/admin-users.component';
+import { AdminAuditLogComponent } from './components/admin-audit-log/admin-audit-log.component';
 import { adminGuard, authGuard, designerGuard, landingGuard, pilotGuard } from './guards/auth.guard';
 
 export const routes: Routes = [
@@ -39,6 +40,7 @@ export const routes: Routes = [
   // Admin section: every mission and every account (admin-only, like the backend).
   { path: 'admin/missions', component: AdminMissionsComponent, canActivate: [authGuard, adminGuard] },
   { path: 'admin/users', component: AdminUsersComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/audit-log', component: AdminAuditLogComponent, canActivate: [authGuard, adminGuard] },
 
   { path: 'profile', component: ProfileComponent, canActivate: [authGuard] },
   // Anyone else's profile, reached from a feed card or a mission's rating panel.
