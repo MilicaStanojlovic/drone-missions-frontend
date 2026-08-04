@@ -27,6 +27,31 @@
   margin: 0;
 }
 
+.page__cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  background: #2f6bff;
+  color: #fff;
+  border: none;
+  border-radius: 9px;
+  padding: 11px 18px;
+  font-weight: 600;
+  font-size: 14px;
+  text-decoration: none;
+  box-shadow: 0 4px 16px rgba(47, 107, 255, 0.28);
+  transition: background 0.15s ease;
+}
+
+.page__cta:hover {
+  background: #1e5ae6;
+}
+
+.page__cta-plus {
+  font-size: 17px;
+  line-height: 1;
+}
+
 .page__state {
   color: #6b7c8d;
   padding: 40px 0;

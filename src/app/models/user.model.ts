@@ -55,6 +55,13 @@ export interface RegisterPayload {
   role: UserRole;
 }
 
+/** Body for POST /users/admins — no role field; the backend forces ADMIN. */
+export interface NewAdminPayload {
+  username: string;
+  email: string;
+  password: string;
+}
+
 /** Body for POST /auth/login. */
 export interface LoginPayload {
   email: string;

@@ -1,5 +1,6 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { RouterLink } from '@angular/router';
 
 import { UserService } from '../../services/user.service';
 import { ToastService } from '../../services/toast.service';
@@ -13,7 +14,7 @@ import {
 /** Admin view: every account, with suspend/reactivate moderation actions. */
 @Component({
   selector: 'app-admin-users',
-  imports: [CommonModule, ConfirmDialogComponent],
+  imports: [CommonModule, RouterLink, ConfirmDialogComponent],
   templateUrl: './admin-users.component.html',
   styleUrl: './admin-users.component.css'
 })
