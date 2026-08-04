@@ -58,7 +58,7 @@ export class AdminMissionsComponent implements OnInit {
     // Best-effort: the suspended flag under designer names. The list still renders without it.
     this.userService.getAll().subscribe({
       next: (users) => {
-        this.suspendedDesigners = new Set(users.filter((u) => u.suspendedAt).map((u) => u.id));
+        this.suspendedDesigners = new Set(users.filter((u) => u.suspended).map((u) => u.id));
       },
       error: (err) => console.error(err)
     });

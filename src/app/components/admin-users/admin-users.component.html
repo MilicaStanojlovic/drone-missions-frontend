@@ -40,19 +40,19 @@
           <div>
             <span
               class="chip"
-              [style.color]="u.suspendedAt ? '#e04a3f' : '#12a06a'"
-              [style.background]="(u.suspendedAt ? '#e04a3f' : '#12a06a') + '1a'"
-              [style.border-color]="(u.suspendedAt ? '#e04a3f' : '#12a06a') + '55'"
+              [style.color]="u.suspended ? '#e04a3f' : '#12a06a'"
+              [style.background]="(u.suspended ? '#e04a3f' : '#12a06a') + '1a'"
+              [style.border-color]="(u.suspended ? '#e04a3f' : '#12a06a') + '55'"
             >
-              <span class="chip__dot" [style.background]="u.suspendedAt ? '#e04a3f' : '#12a06a'"></span>
-              {{ u.suspendedAt ? 'Suspended' : 'Active' }}
+              <span class="chip__dot" [style.background]="u.suspended ? '#e04a3f' : '#12a06a'"></span>
+              {{ u.suspended ? 'Suspended' : 'Active' }}
             </span>
           </div>
           <div class="cell-joined">{{ u.createdAt | date: 'mediumDate' }}</div>
           <div class="cell-action">
             @if (u.role === 'ADMIN') {
               <span class="cell-action__none">—</span>
-            } @else if (u.suspendedAt) {
+            } @else if (u.suspended) {
               <button
                 type="button"
                 class="mod-btn mod-btn--ok"
