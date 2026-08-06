@@ -30,11 +30,12 @@ npm start            # ng serve — dev server at http://localhost:4200 (develop
 npm run build        # ng build — production build to dist/drone-missions-frontend
 npm run watch        # ng build --watch, development configuration
 npm test             # ng test — Karma + Jasmine, launches Chrome
+npm run lint         # ng lint — ESLint 9 flat config (eslint.config.js) via angular-eslint; TS + templates
 ng test --include='**/foo.component.spec.ts'   # run a single test file
 ng generate component <name>                   # scaffold a component (also: service, directive, pipe, ...)
 ```
 
-There is no lint target configured and no e2e framework installed.
+There is no e2e framework installed.
 
 ## Architecture
 

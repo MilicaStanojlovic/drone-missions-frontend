@@ -2,7 +2,7 @@ import { Component, EventEmitter, HostListener, Input, Output } from '@angular/c
 
 /**
  * A small, reusable confirmation modal. Controlled via [open]; emits (confirm)
- * or (cancel). Escape and a backdrop click both cancel. Use [danger] for
+ * or (cancelled). Escape and a backdrop click both cancel. Use [danger] for
  * destructive actions (styles the confirm button red).
  */
 @Component({
@@ -20,12 +20,19 @@ export class ConfirmDialogComponent {
   @Input() danger = false;
 
   @Output() confirm = new EventEmitter<void>();
-  @Output() cancel = new EventEmitter<void>();
+  @Output() cancelled = new EventEmitter<void>();
 
   @HostListener('document:keydown.escape')
   onEscape(): void {
     if (this.open) {
-      this.cancel.emit();
+      this.cancelled.emit();
+    }
+  }
+
+  /** Cancel only when the backdrop itself is clicked, not the card above it. */
+  onBackdrop(event: MouseEvent): void {
+    if (event.target === event.currentTarget) {
+      this.cancelled.emit();
     }
   }
 }

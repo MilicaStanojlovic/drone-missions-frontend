@@ -11,7 +11,7 @@ import {
 } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 
-import { Geofence, LatLng, Mission, MissionPayload, MissionStatus } from '../../models/mission.model';
+import { Geofence, LatLng, MissionPayload, MissionStatus } from '../../models/mission.model';
 import { MissionService } from '../../services/mission.service';
 import { MissionMapComponent } from '../mission-map/mission-map.component';
 import { distanceText, durationText, enclosingCircle, zoneToCircle, zoneToPolygon } from '../../util/geo';

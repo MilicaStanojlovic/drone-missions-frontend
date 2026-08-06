@@ -101,5 +101,5 @@
   cancelText="No, keep it"
   [danger]="pending?.action === 'remove'"
   (confirm)="confirmPending()"
-  (cancel)="pending = null"
+  (cancelled)="pending = null"
 />

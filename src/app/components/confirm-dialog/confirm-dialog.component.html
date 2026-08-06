@@ -1,11 +1,10 @@
 @if (open) {
-  <div class="cd" (click)="cancel.emit()">
+  <div class="cd" role="presentation" (click)="onBackdrop($event)">
     <div
       class="cd__card"
       role="alertdialog"
       aria-modal="true"
       [attr.aria-label]="title"
-      (click)="$event.stopPropagation()"
     >
       <div class="cd__icon" [class.cd__icon--danger]="danger" aria-hidden="true">
         @if (danger) {
@@ -28,7 +27,7 @@
       }
 
       <div class="cd__actions">
-        <button type="button" class="cd__btn cd__btn--cancel" (click)="cancel.emit()">{{ cancelText }}</button>
+        <button type="button" class="cd__btn cd__btn--cancel" (click)="cancelled.emit()">{{ cancelText }}</button>
         <button
           type="button"
           class="cd__btn"

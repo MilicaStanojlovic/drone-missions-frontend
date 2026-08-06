@@ -245,7 +245,7 @@
   cancelText="Cancel"
   [danger]="true"
   (confirm)="confirmDelete()"
-  (cancel)="pendingDelete = false"
+  (cancelled)="pendingDelete = false"
 />
 
 <app-confirm-dialog
@@ -256,7 +256,7 @@
   cancelText="Cancel"
   [danger]="false"
   (confirm)="confirmAccept()"
-  (cancel)="pendingAccept = null"
+  (cancelled)="pendingAccept = null"
 />
 
 <app-confirm-dialog
@@ -267,7 +267,7 @@
   cancelText="Not yet"
   [danger]="false"
   (confirm)="confirmComplete()"
-  (cancel)="pendingComplete = false"
+  (cancelled)="pendingComplete = false"
 />
 
 <app-confirm-dialog
@@ -278,7 +278,7 @@
   cancelText="Not yet"
   [danger]="false"
   (confirm)="confirmStart()"
-  (cancel)="pendingStart = false"
+  (cancelled)="pendingStart = false"
 />
 
 <app-confirm-dialog
@@ -289,5 +289,5 @@
   cancelText="Keep it"
   [danger]="true"
   (confirm)="confirmCancel()"
-  (cancel)="pendingCancel = false"
+  (cancelled)="pendingCancel = false"
 />
