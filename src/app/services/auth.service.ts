@@ -64,7 +64,7 @@ export class AuthService {
    *  a page reload where only the token survives). Safe to call repeatedly. */
   loadProfile(): void {
     if (this.isLoggedIn && !this.profileSubject.value) {
-      this.me().subscribe({ error: () => {} });
+      this.me().subscribe({ error: (err: unknown) => console.error(err) });
     }
   }
 
