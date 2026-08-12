@@ -11,9 +11,13 @@ import {
 } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 
-import { Geofence, LatLng, MissionPayload, MissionStatus } from '../../models/mission.model';
+import { Geofence, LatLng, MissionPayload, MissionStatus, Waypoint } from '../../models/mission.model';
 import { MissionService } from '../../services/mission.service';
 import { MissionMapComponent } from '../mission-map/mission-map.component';
+import {
+  WaypointDetails,
+  WaypointDialogComponent
+} from '../waypoint-dialog/waypoint-dialog.component';
 import { distanceText, durationText, enclosingCircle, zoneToCircle, zoneToPolygon } from '../../util/geo';
 
 /** Fails if the value is only whitespace (so " " doesn't satisfy `required`). */
@@ -34,8 +38,11 @@ const endAfterStart: ValidatorFn = (group: AbstractControl): ValidationErrors | 
   return new Date(end).getTime() < new Date(start).getTime() ? { endBeforeStart: true } : null;
 };
 
+/** Matches a per-waypoint validation key from the backend, e.g. `waypoints[0].altitude`. */
+const waypointField = /^waypoints\[(\d+)\](?:\.\w+)?$/;
+
 interface PlanSnapshot {
-  waypoints: LatLng[];
+  waypoints: Waypoint[];
   geofence: Geofence | null;
 }
 
@@ -46,7 +53,7 @@ interface PlanSnapshot {
  */
 @Component({
   selector: 'app-mission-form',
-  imports: [CommonModule, ReactiveFormsModule, MissionMapComponent],
+  imports: [CommonModule, ReactiveFormsModule, MissionMapComponent, WaypointDialogComponent],
   templateUrl: './mission-form.component.html',
   styleUrl: './mission-form.component.css'
 })
@@ -69,10 +76,16 @@ export class MissionFormComponent implements OnInit {
   readonly maxDescription = 2000;
 
   // ---- plan (map) state ----
-  waypoints: LatLng[] = [];
+  waypoints: Waypoint[] = [];
   geofence: Geofence | null = null;
   mode: 'add' | 'select' | 'pan' = 'add';
   private history: PlanSnapshot[] = [];
+
+  // ---- waypoint modal state ----
+  /** Where a new waypoint goes once the modal collects its altitude/action. */
+  pendingPoint: LatLng | null = null;
+  /** Index of the waypoint being edited, null when adding. */
+  editingIndex: number | null = null;
 
   readonly form = this.fb.nonNullable.group(
     {
@@ -144,12 +157,55 @@ export class MissionFormComponent implements OnInit {
   }
 
   // ---- map events ----
-  onWaypoints(next: LatLng[]): void {
+  onWaypoints(next: Waypoint[]): void {
     if (next.length !== this.waypoints.length) {
       this.pushHistory();
     }
     this.waypoints = next;
   }
+
+  // ---- waypoint modal ----
+  get waypointDialogOpen(): boolean {
+    return this.pendingPoint !== null || this.editingIndex !== null;
+  }
+  /** The waypoint the modal prefills from; null when adding a new one. */
+  get editingWaypoint(): Waypoint | null {
+    return this.editingIndex === null ? null : (this.waypoints[this.editingIndex] ?? null);
+  }
+
+  onWaypointAdd(point: LatLng): void {
+    this.editingIndex = null;
+    this.pendingPoint = point;
+  }
+  onWaypointEdit(index: number): void {
+    this.pendingPoint = null;
+    this.editingIndex = index;
+  }
+  onWaypointSave(details: WaypointDetails): void {
+    const index = this.editingIndex;
+    const point = this.pendingPoint;
+    if (index === null && point === null) {
+      return;
+    }
+    this.pushHistory();
+    if (index !== null) {
+      // Rebuilt, not spread over the old waypoint, so a stale hover duration can't survive an action change.
+      this.waypoints = this.waypoints.map((wp, i) =>
+        i === index ? { lat: wp.lat, lng: wp.lng, ...details } : wp
+      );
+    } else if (point !== null) {
+      this.waypoints = [...this.waypoints, { ...point, ...details }];
+    }
+    this.closeWaypointDialog();
+  }
+  onWaypointCancel(): void {
+    this.closeWaypointDialog();
+  }
+  private closeWaypointDialog(): void {
+    this.pendingPoint = null;
+    this.editingIndex = null;
+  }
+
   onGeofence(next: Geofence): void {
     this.geofence = next;
   }
@@ -279,9 +335,7 @@ export class MissionFormComponent implements OnInit {
     if (body && typeof body === 'object') {
       const data = (body as { data?: unknown }).data;
       if (data && typeof data === 'object') {
-        const messages = Object.values(data as Record<string, unknown>).filter(
-          (m): m is string => typeof m === 'string' && m.length > 0
-        );
+        const messages = this.fieldMessages(data as Record<string, unknown>);
         if (messages.length) {
           return messages.join(' ');
         }
@@ -292,6 +346,23 @@ export class MissionFormComponent implements OnInit {
       }
     }
     return null;
+  }
+
+  /**
+   * Field→message entries as display text: a nested `waypoints[i].<field>` key becomes
+   * "Waypoint <i+1>: …" and sorts by that position, since the map arrives unordered.
+   */
+  private fieldMessages(data: Record<string, unknown>): string[] {
+    return Object.entries(data)
+      .filter((entry): entry is [string, string] => typeof entry[1] === 'string' && entry[1].length > 0)
+      .map(([field, message]) => {
+        const index = waypointField.exec(field)?.[1];
+        return index === undefined
+          ? { position: -1, text: message }
+          : { position: Number(index), text: `Waypoint ${Number(index) + 1}: ${message}` };
+      })
+      .sort((a, b) => a.position - b.position)
+      .map((entry) => entry.text);
   }
 
   /** ISO-8601 → `yyyy-MM-dd` for <input type="date">. */

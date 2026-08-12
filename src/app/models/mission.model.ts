@@ -64,6 +64,41 @@ export interface LatLng {
   lng: number;
 }
 
+/** What the drone does at a waypoint — matches the backend `WaypointAction` enum. */
+export type WaypointAction = 'PHOTO' | 'START_RECORDING' | 'STOP_RECORDING' | 'HOVER';
+
+/** Human-friendly labels for display (waypoint modal, map tooltips). */
+export const WAYPOINT_ACTION_LABELS: Record<WaypointAction, string> = {
+  PHOTO: 'Take a picture',
+  START_RECORDING: 'Start recording',
+  STOP_RECORDING: 'Stop recording',
+  HOVER: 'Hover'
+};
+
+/**
+ * Glyph per action, as the inner markup of a 24×24 stroked `<svg>` — the map
+ * marker badge supplies the wrapper, size and colour (`currentColor`).
+ */
+export const WAYPOINT_ACTION_ICONS: Record<WaypointAction, string> = {
+  PHOTO: '<path d="M4 8.5h3.2L9 6h6l1.8 2.5H20v10H4z" /><circle cx="12" cy="13" r="3" />',
+  START_RECORDING: '<circle cx="12" cy="12" r="5.5" fill="currentColor" stroke="none" />',
+  STOP_RECORDING: '<rect x="7" y="7" width="10" height="10" rx="1.5" fill="currentColor" stroke="none" />',
+  HOVER: '<circle cx="12" cy="12" r="7.5" /><path d="M12 7.5V12l3 1.8" />'
+};
+
+/**
+ * A waypoint of the flight plan — matches the backend `Waypoint`. The extra
+ * fields are optional so missions saved before they existed still typecheck;
+ * the waypoint modal requires them for every new or edited point.
+ */
+export interface Waypoint extends LatLng {
+  /** Metres above ground; the backend caps it at 120. */
+  altitude?: number;
+  action?: WaypointAction;
+  /** Seconds to hover — only for the HOVER action. */
+  hoverDurationSeconds?: number;
+}
+
 /** The mission's flight zone — matches the backend `Geofence` (radius in metres). */
 export type Geofence =
   | { type: 'CIRCLE'; center: LatLng; radiusMeters: number }
@@ -100,7 +135,7 @@ export interface Mission {
   location?: string;
   /** ISO date `yyyy-MM-dd`. */
   biddingDeadline?: string;
-  waypoints?: LatLng[];
+  waypoints?: Waypoint[];
   geofence?: Geofence | null;
   createdAt: string;
   updatedAt: string;

@@ -60,6 +60,8 @@
               [waypoints]="waypoints"
               [geofence]="geofence"
               (waypointsChange)="onWaypoints($event)"
+              (waypointAdd)="onWaypointAdd($event)"
+              (waypointEdit)="onWaypointEdit($event)"
               (geofenceChange)="onGeofence($event)"
               (outOfZone)="onOutOfZone()"
             />
@@ -178,4 +180,11 @@
       </form>
     </div>
   </div>
+
+  <app-waypoint-dialog
+    [open]="waypointDialogOpen"
+    [initial]="editingWaypoint"
+    (save)="onWaypointSave($event)"
+    (cancelled)="onWaypointCancel()"
+  />
 }

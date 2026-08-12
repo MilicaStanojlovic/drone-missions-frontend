@@ -1,0 +1,162 @@
+.wd {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(20, 30, 45, 0.45);
+  backdrop-filter: blur(3px);
+  animation: wd-fade 0.15s ease;
+}
+
+.wd__card {
+  width: 100%;
+  max-width: 400px;
+  background: #ffffff;
+  border: 1px solid #e5eaf0;
+  border-radius: 16px;
+  padding: 26px 26px 22px;
+  text-align: center;
+  box-shadow: 0 20px 60px rgba(20, 35, 55, 0.28);
+  animation: wd-pop 0.16s ease;
+  font-family: 'Space Grotesk', system-ui, sans-serif;
+}
+
+.wd__icon {
+  width: 46px;
+  height: 46px;
+  margin: 0 auto 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  color: #2f6bff;
+  background: #eef3ff;
+}
+
+.wd__title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #141e28;
+  margin: 0 0 8px;
+  letter-spacing: -0.01em;
+}
+
+.wd__message {
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: #5c6b7a;
+  margin: 0 0 20px;
+  overflow-wrap: break-word;
+}
+
+/* Fields — same shape as the mission brief form, left-aligned in the card. */
+.fld {
+  display: block;
+  text-align: left;
+  margin-bottom: 16px;
+}
+
+.fld__label {
+  display: block;
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #6b7c8d;
+  margin-bottom: 7px;
+}
+
+.fld__input {
+  width: 100%;
+  box-sizing: border-box;
+  background: #f7f9fb;
+  border: 1px solid #dbe2ea;
+  border-radius: 8px;
+  color: #1b2732;
+  font: inherit;
+  font-size: 14px;
+  padding: 11px 12px;
+  outline: none;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.fld__input:focus {
+  border-color: #2f6bff;
+  background: #fff;
+}
+
+.fld__select {
+  cursor: pointer;
+  appearance: none;
+}
+
+.fld__input--invalid,
+.fld__input--invalid:focus {
+  border-color: #d98b83;
+}
+
+.fld__err {
+  display: block;
+  margin-top: 6px;
+  font-size: 12px;
+  color: #c0574d;
+}
+
+.wd__actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.wd__btn {
+  flex: 1;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 11px 16px;
+  border-radius: 9px;
+  border: 1px solid transparent;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.wd__btn--cancel {
+  background: #ffffff;
+  border-color: #dbe2ea;
+  color: #43525f;
+}
+
+.wd__btn--cancel:hover {
+  border-color: #b9c6d6;
+  color: #1b2732;
+}
+
+.wd__btn--primary {
+  background: #2f6bff;
+  color: #ffffff;
+  box-shadow: 0 3px 12px rgba(47, 107, 255, 0.28);
+}
+
+.wd__btn--primary:hover {
+  background: #1e5ae6;
+}
+
+@keyframes wd-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes wd-pop {
+  from { opacity: 0; transform: translateY(10px) scale(0.98); }
+  to { opacity: 1; transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wd,
+  .wd__card {
+    animation: none;
+  }
+}
