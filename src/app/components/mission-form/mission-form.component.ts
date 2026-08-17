@@ -125,6 +125,18 @@ export class MissionFormComponent implements OnInit {
   get hasWaypoints(): boolean {
     return this.waypoints.length >= 2;
   }
+  /**
+   * 1-based positions of waypoints still missing an altitude or an action. Missions planned
+   * before those fields existed load with both null, and the backend rejects them on save.
+   */
+  get incompleteWaypointPositions(): number[] {
+    return this.waypoints
+      .map((wp, i) => (wp.altitude == null || wp.action == null ? i + 1 : 0))
+      .filter((position) => position > 0);
+  }
+  get waypointsComplete(): boolean {
+    return this.waypoints.length > 0 && this.incompleteWaypointPositions.length === 0;
+  }
 
   ngOnInit(): void {
     const idParam = this.route.snapshot.paramMap.get('id');
@@ -292,6 +304,14 @@ export class MissionFormComponent implements OnInit {
     if (this.waypoints.length < 2) {
       this.saveError =
         'Draw a flight path with at least 2 waypoints — a single point or an empty path can’t be saved.';
+      return;
+    }
+    const incomplete = this.incompleteWaypointPositions;
+    if (incomplete.length > 0) {
+      this.saveError =
+        incomplete.length === 1
+          ? `Waypoint ${incomplete[0]} needs an altitude and an action — click its marker to set them.`
+          : `Waypoints ${incomplete.join(', ')} need an altitude and an action — click their markers to set them.`;
       return;
     }
     const raw = this.form.getRawValue();

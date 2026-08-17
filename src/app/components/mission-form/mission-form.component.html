@@ -172,6 +172,10 @@
             <span class="checklist__mark" [class.checklist__mark--ok]="hasWaypoints">{{ hasWaypoints ? '✓' : '○' }}</span>
             At least 2 waypoints on the map
           </div>
+          <div class="checklist__item">
+            <span class="checklist__mark" [class.checklist__mark--ok]="waypointsComplete">{{ waypointsComplete ? '✓' : '○' }}</span>
+            An altitude and action on every waypoint
+          </div>
         </div>
 
         @if (saveError) {
