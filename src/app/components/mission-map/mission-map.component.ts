@@ -12,7 +12,13 @@ import {
 } from '@angular/core';
 import * as L from 'leaflet';
 
-import { Geofence, LatLng } from '../../models/mission.model';
+import {
+  Geofence,
+  LatLng,
+  WAYPOINT_ACTION_ICONS,
+  WAYPOINT_ACTION_LABELS,
+  Waypoint
+} from '../../models/mission.model';
 import { DEFAULT_CENTER, DEFAULT_ZOOM, clampToZone, distanceMeters, inZone } from '../../util/geo';
 
 const ZONE_COLOR = '#6d5ef0';
@@ -23,6 +29,10 @@ const ZONE_COLOR = '#6d5ef0';
  * feed the new values back. In `editable` + `mode='add'` a map click appends a
  * waypoint; in `mode='select'` markers drag (right-click removes) and the flight
  * zone gets drag handles. Read-only otherwise (still pannable/zoomable).
+ *
+ * Adding is now a two-step flow owned by the parent: a map click emits
+ * `waypointAdd` (the parent collects altitude/action, then feeds `waypoints`
+ * back), and clicking an existing marker emits `waypointEdit` with its index.
  */
 @Component({
   selector: 'app-mission-map',
@@ -38,14 +48,18 @@ const ZONE_COLOR = '#6d5ef0';
   ]
 })
 export class MissionMapComponent implements AfterViewInit, OnChanges, OnDestroy {
-  @Input() waypoints: LatLng[] = [];
+  @Input() waypoints: Waypoint[] = [];
   @Input() geofence: Geofence | null = null;
   @Input() editable = false;
   @Input() mode: 'add' | 'select' | 'pan' = 'add';
   /** When false the map is a static thumbnail: no pan/zoom/controls, clicks pass through. */
   @Input() interactive = true;
 
-  @Output() waypointsChange = new EventEmitter<LatLng[]>();
+  @Output() waypointsChange = new EventEmitter<Waypoint[]>();
+  /** A click on empty map in `add` mode — the parent decides what to append. */
+  @Output() waypointAdd = new EventEmitter<LatLng>();
+  /** A click on an existing marker, by index. */
+  @Output() waypointEdit = new EventEmitter<number>();
   @Output() geofenceChange = new EventEmitter<Geofence>();
   @Output() outOfZone = new EventEmitter<void>();
 
@@ -104,11 +118,16 @@ export class MissionMapComponent implements AfterViewInit, OnChanges, OnDestroy 
       this.outOfZone.emit();
       return;
     }
-    this.waypointsChange.emit([...this.waypoints, p]);
+    this.waypointAdd.emit(p);
   }
 
-  private currentWaypoints(): LatLng[] {
-    return this.markers.map((m) => ({ lat: m.getLatLng().lat, lng: m.getLatLng().lng }));
+  /** Marker positions merged back onto the waypoints, so altitude/action survive a drag. */
+  private currentWaypoints(): Waypoint[] {
+    return this.markers.map((m, i) => ({
+      ...this.waypoints[i],
+      lat: m.getLatLng().lat,
+      lng: m.getLatLng().lng
+    }));
   }
 
   // ---- rendering ----
@@ -138,32 +157,68 @@ export class MissionMapComponent implements AfterViewInit, OnChanges, OnDestroy 
     }
   }
 
-  private renderWaypoint(wp: LatLng, i: number): void {
+  private renderWaypoint(wp: Waypoint, i: number): void {
     const outside = this.geofence != null && !inZone(wp, this.geofence);
     const color = outside ? '#e04a3f' : i === 0 ? '#12a06a' : '#2f6bff';
     const draggable = this.editable && this.mode === 'select';
-    const marker = L.marker([wp.lat, wp.lng], {
-      draggable,
-      icon: L.divIcon({
-        className: '',
-        html:
-          `<div style="width:26px;height:26px;border-radius:50%;background:#fff;border:2.5px solid ${color};` +
-          `display:flex;align-items:center;justify-content:center;font:600 12px 'IBM Plex Mono',monospace;` +
-          `color:${color};box-shadow:0 1px 3px rgba(20,35,55,.3)">${i + 1}</div>`,
-        iconSize: [26, 26],
-        iconAnchor: [13, 13]
-      })
-    });
+    const marker = L.marker([wp.lat, wp.lng], { draggable, icon: this.waypointIcon(wp, i, color) });
+    const tooltip = this.waypointTooltip(wp);
+    if (tooltip) {
+      marker.bindTooltip(tooltip, { direction: 'top', offset: [0, -14], opacity: 0.95 });
+    }
+    if (this.editable) {
+      marker.on('click', () => this.waypointEdit.emit(i));
+    }
     if (draggable) {
       marker.on('drag', () => this.pathLine?.setLatLngs(this.markers.map((m) => m.getLatLng())));
       marker.on('dragend', () => {
-        const next = this.currentWaypoints().map((p) => clampToZone(p, this.geofence) ?? p);
+        const next = this.currentWaypoints().map((p) => {
+          const clamped = clampToZone(p, this.geofence);
+          return clamped ? { ...p, lat: clamped.lat, lng: clamped.lng } : p;
+        });
         this.waypointsChange.emit(next);
       });
       marker.on('contextmenu', () => this.waypointsChange.emit(this.waypoints.filter((_, idx) => idx !== i)));
     }
     this.markers.push(marker);
     this.plan.addLayer(marker);
+  }
+
+  /** Numbered pin, with an action badge clipped to its corner when the waypoint has one. */
+  private waypointIcon(wp: Waypoint, i: number, color: string): L.DivIcon {
+    const pin =
+      `<div style="width:26px;height:26px;border-radius:50%;background:#fff;border:2.5px solid ${color};` +
+      `display:flex;align-items:center;justify-content:center;font:600 12px 'IBM Plex Mono',monospace;` +
+      `color:${color};box-shadow:0 1px 3px rgba(20,35,55,.3)">${i + 1}</div>`;
+    // Legacy waypoints carry no action — keep the plain marker.
+    if (!wp.action) {
+      return L.divIcon({ className: '', html: pin, iconSize: [26, 26], iconAnchor: [13, 13] });
+    }
+    const badge =
+      `<div style="position:absolute;right:-5px;bottom:-4px;width:15px;height:15px;border-radius:50%;` +
+      `background:${color};border:1.5px solid #fff;color:#fff;display:flex;align-items:center;` +
+      `justify-content:center;box-shadow:0 1px 2px rgba(20,35,55,.35)">` +
+      `<svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.4" ` +
+      `stroke-linecap="round" stroke-linejoin="round">${WAYPOINT_ACTION_ICONS[wp.action]}</svg></div>`;
+    return L.divIcon({
+      className: '',
+      html: `<div style="position:relative;width:26px;height:26px">${pin}${badge}</div>`,
+      iconSize: [26, 26],
+      iconAnchor: [13, 13]
+    });
+  }
+
+  /** `Hover 30 s · 60 m` — empty for legacy waypoints that carry neither field. */
+  private waypointTooltip(wp: Waypoint): string {
+    const parts: string[] = [];
+    if (wp.action) {
+      const seconds = wp.action === 'HOVER' && wp.hoverDurationSeconds ? ` ${wp.hoverDurationSeconds} s` : '';
+      parts.push(`${WAYPOINT_ACTION_LABELS[wp.action]}${seconds}`);
+    }
+    if (wp.altitude != null) {
+      parts.push(`${wp.altitude} m`);
+    }
+    return parts.join(' · ');
   }
 
   private renderZone(): void {
