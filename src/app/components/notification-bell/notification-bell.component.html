@@ -1,0 +1,54 @@
+<div class="bell">
+  <button
+    type="button"
+    class="bell__btn"
+    [class.bell__btn--active]="open"
+    (click)="toggle()"
+    aria-label="Notifications"
+  >
+    <svg class="bell__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+         stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+      <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+    </svg>
+    @if (unreadCount$ | async; as count) {
+      @if (count > 0) {
+        <span class="bell__badge">{{ count > 9 ? '9+' : count }}</span>
+      }
+    }
+  </button>
+
+  @if (open) {
+    <div class="bell__backdrop" role="presentation" (click)="close()"></div>
+    <div class="panel">
+      <div class="panel__head">
+        <span class="panel__title">Notifications</span>
+        @if ((unreadCount$ | async)) {
+          <button type="button" class="panel__mark" (click)="markAll()">Mark all read</button>
+        }
+      </div>
+
+      @if ((notifications$ | async); as items) {
+        @if (items.length === 0) {
+          <div class="panel__empty">You're all caught up.</div>
+        } @else {
+          <div class="panel__list">
+            @for (n of items; track n.id) {
+              <button type="button" class="note" [class.note--unread]="!n.read" (click)="onSelect(n)">
+                <span class="note__dot" [style.background]="colors[n.type]"></span>
+                <span class="note__body">
+                  <span class="note__title">{{ n.title }}</span>
+                  <span class="note__msg">{{ n.message }}</span>
+                  <span class="note__time">{{ timeAgo(n.createdAt) }}</span>
+                </span>
+                @if (!n.read) {
+                  <span class="note__unread" [style.background]="colors[n.type]"></span>
+                }
+              </button>
+            }
+          </div>
+        }
+      }
+    </div>
+  }
+</div>

@@ -1,0 +1,159 @@
+.nav {
+  position: sticky;
+  top: 0;
+  /* Above Leaflet's map panes (200–700) and controls (1000) so the notification
+     dropdown isn't hidden behind a mission map. Confirm dialogs (2000) still win. */
+  z-index: 1100;
+  background: #ffffff;
+  border-bottom: 1px solid #e5eaf0;
+  box-shadow: 0 1px 3px rgba(20, 35, 55, 0.04);
+}
+
+.nav__inner {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 0 24px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.nav__left {
+  display: flex;
+  align-items: center;
+  gap: 30px;
+  min-width: 0;
+}
+
+.nav__brand {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  text-decoration: none;
+}
+
+.nav__logo {
+  width: 15px;
+  height: 15px;
+  transform: rotate(45deg);
+  background: #2f6bff;
+  box-shadow: 0 3px 10px rgba(47, 107, 255, 0.4);
+}
+
+.nav__wordmark {
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-weight: 600;
+  letter-spacing: 0.19em;
+  font-size: 13px;
+  color: #1b2732;
+}
+
+.nav__links {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.nav__link {
+  padding: 7px 12px;
+  border-radius: 7px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #5c6b7a;
+  text-decoration: none;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.nav__link:hover {
+  background: #f0f3f7;
+  color: #1b2732;
+}
+
+.nav__link--active {
+  color: #2f6bff;
+  background: #eef3ff;
+}
+
+.nav__account {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.nav__chip {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 5px 13px 5px 11px;
+  background: #f4f7fa;
+  border: 1px solid #e5eaf0;
+  border-radius: 22px;
+  text-decoration: none;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.nav__chip:hover {
+  border-color: #c3ccd6;
+  background: #eef2f6;
+}
+
+.nav__chip--active {
+  border-color: #2f6bff;
+}
+
+.nav__chip-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  box-shadow: 0 0 0 3px rgba(47, 107, 255, 0.16);
+}
+
+.nav__chip-text {
+  line-height: 1.15;
+}
+
+.nav__chip-name {
+  display: block;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #1b2732;
+}
+
+.nav__chip-role {
+  display: block;
+  font-size: 9.5px;
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  letter-spacing: 0.08em;
+  color: #93a1b0;
+  text-transform: uppercase;
+}
+
+.nav__logout {
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  color: #5c6b7a;
+  background: #ffffff;
+  border: 1px solid #dbe2ea;
+  border-radius: 7px;
+  padding: 7px 13px;
+  transition: border-color 0.15s ease, color 0.15s ease;
+}
+
+.nav__logout:hover {
+  border-color: #c3ccd6;
+  color: #1b2732;
+}
+
+.app-main {
+  display: block;
+}
+
+@media (max-width: 560px) {
+  .nav__left { gap: 16px; }
+  .nav__chip-role { display: none; }
+}

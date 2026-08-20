@@ -1,0 +1,98 @@
+@if (open) {
+  <div class="wd" role="presentation" (click)="onBackdrop($event)">
+    <form
+      class="wd__card"
+      role="dialog"
+      aria-modal="true"
+      [attr.aria-label]="initial ? 'Edit waypoint' : 'New waypoint'"
+      [formGroup]="form"
+      (ngSubmit)="submit()"
+      novalidate
+    >
+      <div class="wd__icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"
+             stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 21s7-6.2 7-11a7 7 0 1 0-14 0c0 4.8 7 11 7 11z" /><circle cx="12" cy="10" r="2.5" />
+        </svg>
+      </div>
+
+      <h2 class="wd__title">{{ initial ? 'Edit waypoint' : 'New waypoint' }}</h2>
+      <p class="wd__message">How high the drone flies here, and what it does when it arrives.</p>
+
+      <label class="fld">
+        <span class="fld__label">Altitude (m)</span>
+        <input
+          class="fld__input"
+          type="number"
+          formControlName="altitude"
+          min="1"
+          [max]="maxAltitude"
+          step="1"
+          placeholder="e.g. 60"
+          [class.fld__input--invalid]="form.controls.altitude.invalid && form.controls.altitude.touched"
+        />
+        @if (form.controls.altitude.touched && form.controls.altitude.hasError('required')) {
+          <span class="fld__err">Altitude is required.</span>
+        } @else if (form.controls.altitude.touched && form.controls.altitude.hasError('positive')) {
+          <span class="fld__err">Altitude must be greater than 0.</span>
+        } @else if (form.controls.altitude.touched && form.controls.altitude.hasError('max')) {
+          <span class="fld__err">Altitude can't be above {{ maxAltitude }} m.</span>
+        }
+      </label>
+
+      <label class="fld">
+        <span class="fld__label">Action</span>
+        <select
+          class="fld__input fld__select"
+          formControlName="action"
+          [class.fld__input--invalid]="form.controls.action.invalid && form.controls.action.touched"
+        >
+          <option [ngValue]="null" disabled>Choose an action…</option>
+          @for (option of actions; track option) {
+            <option [ngValue]="option">{{ actionLabels[option] }}</option>
+          }
+        </select>
+        @if (form.controls.action.touched && form.controls.action.hasError('required')) {
+          <span class="fld__err">Pick what the drone should do here.</span>
+        }
+      </label>
+
+      @if (isHover) {
+        <label class="fld">
+          <span class="fld__label">Hover duration (s)</span>
+          <input
+            class="fld__input"
+            type="number"
+            formControlName="hoverDurationSeconds"
+            min="1"
+            step="1"
+            placeholder="e.g. 30"
+            [class.fld__input--invalid]="
+              form.controls.hoverDurationSeconds.invalid && form.controls.hoverDurationSeconds.touched
+            "
+          />
+          @if (
+            form.controls.hoverDurationSeconds.touched && form.controls.hoverDurationSeconds.hasError('required')
+          ) {
+            <span class="fld__err">Hover duration is required.</span>
+          } @else if (
+            form.controls.hoverDurationSeconds.touched && form.controls.hoverDurationSeconds.hasError('positive')
+          ) {
+            <span class="fld__err">Hover duration must be greater than 0.</span>
+          } @else if (
+            form.controls.hoverDurationSeconds.touched && form.controls.hoverDurationSeconds.hasError('integer')
+          ) {
+            <span class="fld__err">Hover duration must be a whole number of seconds.</span>
+          }
+        </label>
+      }
+
+      <div class="wd__actions">
+        <button type="button" class="wd__btn wd__btn--cancel" (click)="cancelled.emit()">Cancel</button>
+        <button type="submit" class="wd__btn wd__btn--primary">
+          {{ initial ? 'Save waypoint' : 'Add waypoint' }}
+        </button>
+      </div>
+    </form>
+  </div>
+}

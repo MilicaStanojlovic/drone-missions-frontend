@@ -1,0 +1,105 @@
+<section class="page">
+  <header class="page__head">
+    <div>
+      <div class="page__eyebrow">PLATFORM ADMIN</div>
+      <h1 class="page__title">All Missions</h1>
+    </div>
+    <input
+      class="page__search"
+      type="text"
+      [formControl]="search"
+      placeholder="Search by mission or designer…"
+    />
+  </header>
+
+  @if (loading) {
+    <p class="page__state">Loading missions…</p>
+  } @else if (error) {
+    <p class="page__state page__state--error">Couldn't load missions. Please try again.</p>
+  } @else if (missions.length === 0) {
+    <div class="empty">
+      <div class="empty__title">{{ search.value.trim() ? 'No missions match your search.' : 'No missions yet.' }}</div>
+      <div class="empty__sub">{{ search.value.trim() ? 'Try a different mission name or designer.' : 'Created missions will appear here.' }}</div>
+    </div>
+  } @else {
+    <div class="table">
+      <div class="table__head">
+        <span>Mission</span><span>Designer</span><span>Status</span><span class="table__head-action">Moderation</span>
+      </div>
+      @for (m of missions; track m.id) {
+        <div
+          class="table__row"
+          [class.table__row--hidden]="m.moderation === 'HIDDEN'"
+        >
+          <div class="cell-main">
+            <div class="cell-main__title" [title]="m.name">{{ m.name }}</div>
+            <div class="cell-main__meta">{{ meta(m) }}</div>
+          </div>
+          <div class="cell-designer" [title]="m.designerName || ''">
+            {{ m.designerName || '—' }}
+            @if (m.designerSuspended) {
+              <div class="cell-designer__flag">Suspended</div>
+            }
+          </div>
+          <div>
+            <span
+              class="chip"
+              [style.color]="statusColors[m.status]"
+              [style.background]="statusColors[m.status] + '1a'"
+              [style.border-color]="statusColors[m.status] + '55'"
+            >
+              <span class="chip__dot" [style.background]="statusColors[m.status]"></span>
+              {{ statusLabels[m.status] }}
+            </span>
+          </div>
+          <div class="cell-action">
+            <button
+              type="button"
+              class="mod-btn mod-btn--warn"
+              [disabled]="acting === m.id"
+              (click)="onHideClick(m)"
+            >{{ hideLabel(m) }}</button>
+            <button
+              type="button"
+              class="mod-btn mod-btn--danger"
+              [disabled]="acting === m.id"
+              (click)="onRemoveClick(m)"
+            >Remove</button>
+          </div>
+        </div>
+      }
+    </div>
+    <div class="pager">
+      <button
+        type="button"
+        class="pager__btn"
+        [disabled]="pageIndex === 0"
+        (click)="goTo(pageIndex - 1)"
+      >‹ Prev</button>
+      <span class="pager__info">
+        Page {{ pageIndex + 1 }} of {{ lastPageIndex + 1 }} · {{ totalElements }} missions
+      </span>
+      <button
+        type="button"
+        class="pager__btn"
+        [disabled]="pageIndex >= lastPageIndex"
+        (click)="goTo(pageIndex + 1)"
+      >Next ›</button>
+    </div>
+    <div class="table__note">
+      Hidden missions stay with their designer but disappear from the pilot feed — reversible.
+      Removing a mission permanently deletes it, along with its bids and ratings.
+    </div>
+  }
+</section>
+
+<app-confirm-dialog
+  [open]="pending !== null"
+  [title]="pendingTitle"
+  [message]="pendingBody"
+  [confirmText]="pending?.action === 'remove' ? 'Delete mission' : 'Hide mission'"
+  cancelText="No, keep it"
+  [danger]="pending?.action === 'remove'"
+  (confirm)="confirmPending()"
+  (cancelled)="pending = null"
+/>

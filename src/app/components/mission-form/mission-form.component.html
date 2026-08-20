@@ -1,0 +1,194 @@
+@if (loadError) {
+  <div class="editor__notfound">
+    <h1>Mission not found</h1>
+    <p>We couldn't load this mission for editing. It may have been deleted.</p>
+    <button type="button" class="btn btn--soft" (click)="cancel()">← Back to My Missions</button>
+  </div>
+} @else {
+  <div class="editor">
+    <!-- header bar -->
+    <div class="editor__bar">
+      <div class="editor__bar-left">
+        <button type="button" class="btn btn--soft" (click)="cancel()">← Back</button>
+        <div>
+          <div class="editor__title">{{ isEdit ? 'Edit mission' : 'New mission' }}</div>
+          <div class="editor__subtitle">CLICK MAP TO ADD · DRAG TO MOVE · RIGHT-CLICK A NODE TO REMOVE</div>
+        </div>
+      </div>
+      <div class="editor__bar-actions">
+        @if (!isEdit) {
+          <button type="button" class="btn btn--soft" [disabled]="submitting" (click)="saveAsDraft()">Save as Draft</button>
+          <button type="button" class="btn btn--primary" [disabled]="submitting" (click)="publish()">
+            {{ submitting ? 'Saving…' : 'Publish' }}
+          </button>
+        } @else {
+          <button type="button" class="btn btn--primary" [disabled]="submitting" (click)="saveChanges()">
+            {{ submitting ? 'Saving…' : 'Save changes' }}
+          </button>
+        }
+      </div>
+    </div>
+
+    <div class="editor__body">
+      <!-- map pane -->
+      <div class="editor__map-pane">
+        <div class="editor__tools">
+          <div class="seg">
+            <button type="button" class="seg__btn" [class.seg__btn--active]="mode === 'add'" (click)="setMode('add')">+ Add node</button>
+            <button type="button" class="seg__btn" [class.seg__btn--active]="mode === 'select'" (click)="setMode('select')">Move / edit</button>
+            <button type="button" class="seg__btn" [class.seg__btn--active]="mode === 'pan'" (click)="setMode('pan')">Pan</button>
+          </div>
+          <div class="editor__zone">
+            <span class="editor__zone-label">ZONE</span>
+            <div class="seg">
+              <button type="button" class="seg__btn" [class.seg__btn--active]="zoneType === 'CIRCLE'" (click)="setZone('CIRCLE')">◯ Circle</button>
+              <button type="button" class="seg__btn" [class.seg__btn--active]="zoneType === 'POLYGON'" (click)="setZone('POLYGON')">⬡ Polygon</button>
+              <button type="button" class="seg__btn" [class.seg__btn--active]="zoneType === null" (click)="clearZone()">None</button>
+            </div>
+          </div>
+          <div class="editor__tools-right">
+            <button type="button" class="btn btn--soft" (click)="undo()">Undo</button>
+            <button type="button" class="btn btn--danger-ghost" (click)="clear()">Clear</button>
+          </div>
+        </div>
+
+        <div class="editor__map-area">
+          <div class="editor__map-wrap">
+            <app-mission-map
+              [editable]="true"
+              [mode]="mode"
+              [waypoints]="waypoints"
+              [geofence]="geofence"
+              (waypointsChange)="onWaypoints($event)"
+              (waypointAdd)="onWaypointAdd($event)"
+              (waypointEdit)="onWaypointEdit($event)"
+              (geofenceChange)="onGeofence($event)"
+              (outOfZone)="onOutOfZone()"
+            />
+          </div>
+        </div>
+
+        <div class="editor__readouts">
+          <div><span class="ro__label">WAYPOINTS</span> <span class="ro__value ro__value--accent">{{ waypointCount }}</span></div>
+          <div><span class="ro__label">PATH</span> <span class="ro__value">{{ pathText }}</span></div>
+          <div><span class="ro__label">EST. FLIGHT</span> <span class="ro__value">{{ flightText }}</span></div>
+          @if (zoneWarn) {
+            <div class="editor__warn">Waypoint must be inside the flight zone</div>
+          }
+        </div>
+      </div>
+
+      <!-- brief form pane -->
+      <form class="editor__form" [formGroup]="form" (ngSubmit)="isEdit ? saveChanges() : publish()" novalidate>
+        <div class="editor__form-eyebrow">MISSION BRIEF</div>
+
+        <label class="fld">
+          <span class="fld__label">Title</span>
+          <input
+            class="fld__input"
+            type="text"
+            formControlName="name"
+            [attr.maxlength]="maxName"
+            placeholder="e.g. Rooftop Solar Inspection"
+            [class.fld__input--invalid]="form.controls.name.invalid && form.controls.name.touched"
+          />
+          @if (form.controls.name.touched && form.controls.name.hasError('required')) {
+            <span class="fld__err">Title is required.</span>
+          } @else if (form.controls.name.touched && form.controls.name.hasError('blank')) {
+            <span class="fld__err">Title can't be only spaces.</span>
+          }
+        </label>
+
+        <label class="fld">
+          <span class="fld__label">Location</span>
+          <input class="fld__input" type="text" formControlName="location" placeholder="City, State" />
+        </label>
+
+        <label class="fld">
+          <span class="fld__label">Description</span>
+          <textarea
+            class="fld__input fld__textarea"
+            rows="4"
+            formControlName="description"
+            [attr.maxlength]="maxDescription"
+            placeholder="What the pilot needs to know — altitude, pattern, constraints…"
+            [class.fld__input--invalid]="form.controls.description.invalid && form.controls.description.touched"
+          ></textarea>
+          <div class="fld__meta">
+            <span class="fld__err">
+              @if (form.controls.description.touched && form.controls.description.hasError('required')) {
+                Description is required.
+              } @else if (form.controls.description.touched && form.controls.description.hasError('blank')) {
+                Description can't be only spaces.
+              }
+            </span>
+            <span class="fld__count" [class.fld__count--over]="descriptionLength >= maxDescription">
+              {{ descriptionLength }}/{{ maxDescription }}
+            </span>
+          </div>
+        </label>
+
+        <div class="fld-row">
+          <label class="fld">
+            <span class="fld__label">Start date</span>
+            <input
+              class="fld__input"
+              type="date"
+              formControlName="startDate"
+              [class.fld__input--invalid]="form.controls.startDate.invalid && form.controls.startDate.touched"
+            />
+          </label>
+          <label class="fld">
+            <span class="fld__label">End date</span>
+            <input
+              class="fld__input"
+              type="date"
+              formControlName="endDate"
+              [class.fld__input--invalid]="(form.controls.endDate.invalid || form.hasError('endBeforeStart')) && form.controls.endDate.touched"
+            />
+          </label>
+        </div>
+        @if (
+          (form.controls.startDate.touched && form.controls.startDate.hasError('required')) ||
+          (form.controls.endDate.touched && form.controls.endDate.hasError('required'))
+        ) {
+          <span class="fld__err">Start and end dates are required.</span>
+        } @else if (form.hasError('endBeforeStart') && form.controls.endDate.touched) {
+          <span class="fld__err">End date can't be before the start date.</span>
+        }
+
+        <label class="fld">
+          <span class="fld__label">Bidding deadline</span>
+          <input class="fld__input" type="date" formControlName="biddingDeadline" />
+        </label>
+
+        <div class="checklist">
+          <div class="checklist__title">TO PUBLISH</div>
+          <div class="checklist__item">
+            <span class="checklist__mark" [class.checklist__mark--ok]="hasTitle">{{ hasTitle ? '✓' : '○' }}</span>
+            A mission title
+          </div>
+          <div class="checklist__item">
+            <span class="checklist__mark" [class.checklist__mark--ok]="hasWaypoints">{{ hasWaypoints ? '✓' : '○' }}</span>
+            At least 2 waypoints on the map
+          </div>
+          <div class="checklist__item">
+            <span class="checklist__mark" [class.checklist__mark--ok]="waypointsComplete">{{ waypointsComplete ? '✓' : '○' }}</span>
+            An altitude and action on every waypoint
+          </div>
+        </div>
+
+        @if (saveError) {
+          <p class="editor__save-error">{{ saveError }}</p>
+        }
+      </form>
+    </div>
+  </div>
+
+  <app-waypoint-dialog
+    [open]="waypointDialogOpen"
+    [initial]="editingWaypoint"
+    (save)="onWaypointSave($event)"
+    (cancelled)="onWaypointCancel()"
+  />
+}

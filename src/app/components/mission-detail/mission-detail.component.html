@@ -1,0 +1,293 @@
+@if (loading) {
+  <p class="state">Loading mission…</p>
+} @else if (error || !mission) {
+  <div class="state state--error">
+    <h1>Mission not found</h1>
+    <p>We couldn't load this mission. It may have been deleted.</p>
+    <button type="button" class="btn btn--soft" (click)="back()">← {{ backLabel }}</button>
+  </div>
+} @else {
+  <main class="detail">
+    <button type="button" class="detail__back" (click)="back()">← {{ backLabel }}</button>
+
+    <div class="detail__head">
+      <div class="detail__head-info">
+        <div class="detail__badge-row">
+          <span
+            class="badge"
+            [style.color]="statusColors[mission.status]"
+            [style.background]="statusColors[mission.status] + '1a'"
+            [style.border-color]="statusColors[mission.status] + '55'"
+          >
+            <span class="badge__dot" [style.background]="statusColors[mission.status]"></span>
+            {{ statusLabels[mission.status] }}
+          </span>
+          @if (mission.location) {
+            <span class="detail__loc">{{ mission.location }}</span>
+          }
+        </div>
+        <h1 class="detail__title">{{ mission.name }}</h1>
+        @if (mission.designerEmail) {
+          <div style="margin-top:7px;font-size:13px;color:#93a1b0">Designed by
+            <strong style="font-weight:600;color:#46566a">{{ mission.designerEmail }}</strong></div>
+        }
+      </div>
+      @if (isOwner) {
+        <div class="detail__actions">
+          <a [routerLink]="['/missions', mission.id, 'edit']" class="btn btn--soft">Edit</a>
+          @if (canCancel) {
+            <button type="button" class="btn btn--soft" (click)="askCancel()">Cancel mission</button>
+          }
+          <button type="button" class="btn btn--danger" (click)="askDelete()">Delete</button>
+        </div>
+      }
+    </div>
+
+    <!-- status timeline -->
+    <div class="timeline">
+      @for (st of steps; track st.label) {
+        <div class="timeline__step">
+          <span
+            class="timeline__dot"
+            [class.timeline__dot--reached]="st.reached"
+            [style.border-color]="st.reached ? st.color : '#cbd5df'"
+            [style.background]="st.reached ? st.color : '#ffffff'"
+            [style.box-shadow]="st.current ? '0 0 0 4px ' + st.color + '29' : 'none'"
+          ></span>
+          <span class="timeline__label" [class.timeline__label--reached]="st.reached">{{ st.label }}</span>
+          @if (!st.last) {
+            <span class="timeline__line"></span>
+          }
+        </div>
+      }
+    </div>
+
+    <div class="detail__grid">
+      <div class="detail__main">
+        <div class="detail__map">
+          @if (waypoints.length) {
+            <app-mission-map [waypoints]="waypoints" [geofence]="geofence" [editable]="false" />
+          } @else {
+            <div class="detail__map-empty">No flight plan was saved for this mission.</div>
+          }
+        </div>
+
+        <div class="telemetry">
+          <div class="tele"><div class="tele__label">Waypoints</div><div class="tele__value">{{ waypoints.length }}</div></div>
+          <div class="tele"><div class="tele__label">Path length</div><div class="tele__value">{{ pathText }}</div></div>
+          <div class="tele"><div class="tele__label">Est. flight</div><div class="tele__value">{{ flightText }}</div></div>
+          <div class="tele"><div class="tele__label">Bids</div><div class="tele__value">{{ bids.length }}</div></div>
+        </div>
+
+        <div class="brief">
+          <div class="brief__eyebrow">BRIEF</div>
+          <p class="brief__desc">{{ mission.description }}</p>
+          <div class="brief__meta">
+            <div>
+              <div class="brief__meta-label">Flight window</div>
+              <div class="brief__meta-value">{{ windowText }}</div>
+            </div>
+            <div>
+              <div class="brief__meta-label">Bidding</div>
+              <div class="brief__meta-value">{{ deadlineText }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- bids panel -->
+      <aside class="panel">
+        @if (auth.isPilot) {
+          <div class="panel__head"><span class="panel__title">Your bid</span></div>
+          <div class="panel__body">
+            @if (isWinner) {
+              @if (mission.status === 'IN_PROGRESS') {
+                <div class="finish">
+                  <div class="finish__title">Your mission is underway</div>
+                  <div class="finish__sub">Started {{ windowText }} — let the designer know once it's done.</div>
+                  <button type="button" class="finish__cta" (click)="askComplete()">Mark mission finished</button>
+                </div>
+              } @else if (mission.status === 'COMPLETED') {
+                <div class="finish finish--done">
+                  <div class="finish__title">✓ Mission completed</div>
+                  <div class="finish__sub">Thanks — you marked this mission as finished.</div>
+                </div>
+              } @else if (mission.status === 'AWARDED') {
+                <div class="finish">
+                  <div class="finish__title">You won this mission</div>
+                  <div class="finish__sub">Start it when you're ready to fly — then you can mark it finished.</div>
+                  <button type="button" class="finish__cta" (click)="askStart()">Start mission</button>
+                </div>
+              }
+            }
+            @if (myBid; as mine) {
+              <div class="mybid">
+                <div class="mybid__label">Current bid</div>
+                <div class="mybid__amount">${{ mine.amount }}</div>
+                @if (mine.message) {
+                  <div class="mybid__msg">“{{ mine.message }}”</div>
+                }
+                @if (mine.status === 'ACCEPTED') {
+                  <div class="mybid__status mybid__status--won">✓ You won this mission</div>
+                } @else if (mine.status === 'REJECTED') {
+                  <div class="mybid__status mybid__status--lost">This bid was not accepted</div>
+                }
+                @if (mine.status === 'PENDING') {
+                  <button type="button" class="mybid__withdraw" [disabled]="bidBusy" (click)="withdrawBid()">
+                    Withdraw bid
+                  </button>
+                }
+              </div>
+            }
+            @if (canBid) {
+              <label class="bidfield">
+                <span class="bidfield__label">{{ myBid ? 'Update your bid (USD)' : 'Your bid (USD)' }}</span>
+                <input class="bidfield__input" type="number" min="1"
+                  [placeholder]="myBid ? 'Current: $' + myBid.amount + ' (leave blank to keep)' : 'e.g. 450'"
+                  [value]="bidAmount" (input)="bidAmount = $any($event.target).value" />
+              </label>
+              <label class="bidfield">
+                <span class="bidfield__label">Message (optional)</span>
+                <textarea class="bidfield__input bidfield__textarea" rows="2" maxlength="500"
+                  [placeholder]="myBid?.message ? 'Leave blank to keep your current message' : 'Anything the designer should know…'"
+                  [value]="bidMessage" (input)="bidMessage = $any($event.target).value"></textarea>
+              </label>
+              <button type="button" class="panel__cta" [disabled]="bidBusy" (click)="placeBid()">
+                {{ myBid ? 'Update bid' : 'Place bid' }}
+              </button>
+            } @else if (deadlinePassed && auth.isPilot) {
+              <div class="panel__empty">Bidding is closed — the deadline has passed.</div>
+            } @else if (!myBid) {
+              <div class="panel__empty">This mission isn't open for bids.</div>
+            }
+          </div>
+        } @else {
+          <div class="panel__head">
+            <span class="panel__title">Bids</span>
+            <span class="panel__count">{{ bidCountText }}</span>
+          </div>
+          @if (!bids.length) {
+            <div class="panel__empty">No bids have come in yet.</div>
+          } @else {
+            <div class="bids">
+              @for (b of bids; track b.id) {
+                <div class="bid" [class.bid--accepted]="b.status === 'ACCEPTED'">
+                  <div class="bid__row">
+                    <div class="bid__who">
+                      <span class="bid__pilot">{{ b.pilotName }}</span>
+                      @if (b.status === 'ACCEPTED') { <span class="bid__tag bid__tag--awarded">ACCEPTED</span> }
+                      @if (b.status === 'REJECTED') { <span class="bid__tag">REJECTED</span> }
+                    </div>
+                    <div class="bid__price">${{ b.amount }}</div>
+                  </div>
+                  @if (b.message) {
+                    <div class="bid__msg">“{{ b.message }}”</div>
+                  }
+                  @if (isOwner && !hasAward && b.status === 'PENDING') {
+                    <button type="button" class="bid__award" (click)="askAccept(b)">Accept {{ firstName(b.pilotName) }}'s bid</button>
+                  }
+                </div>
+              }
+            </div>
+          }
+        }
+      </aside>
+
+      <!-- ratings panel: same for both sides, so it lives outside the role branch above -->
+      @if (mission.status === 'COMPLETED' && isParticipant) {
+        <aside class="panel">
+          <div class="panel__head"><span class="panel__title">Rating</span></div>
+          <div class="panel__body">
+            @if (canRate) {
+              <app-rating-form
+                [missionId]="mission.id"
+                [counterpartName]="counterpartName"
+                (rated)="onRated()"
+              />
+            }
+
+            @if (myRating; as mine) {
+              <app-rating-note
+                [rating]="mine"
+                [label]="'You rated ' + (counterpartName || 'the other side')"
+              />
+            }
+
+            @if (ratingOfMe; as theirs) {
+              <app-rating-note
+                [rating]="theirs"
+                [label]="theirs.raterName + ' rated you'"
+                [bordered]="true"
+              />
+            } @else {
+              <div class="panel__empty">
+                {{ counterpartName || 'The other side' }} hasn’t rated you yet.
+              </div>
+            }
+
+            @if (counterpartId !== null && counterpartName) {
+              <a class="detail__back" [routerLink]="['/users', counterpartId]">
+                View {{ counterpartName }}’s profile
+              </a>
+            }
+          </div>
+        </aside>
+      }
+    </div>
+  </main>
+}
+
+<app-confirm-dialog
+  [open]="pendingDelete"
+  title="Delete mission?"
+  [message]="mission ? '“' + mission.name + '” will be permanently removed. This cannot be undone.' : ''"
+  confirmText="Delete mission"
+  cancelText="Cancel"
+  [danger]="true"
+  (confirm)="confirmDelete()"
+  (cancelled)="pendingDelete = false"
+/>
+
+<app-confirm-dialog
+  [open]="pendingAccept !== null"
+  title="Accept this bid?"
+  [message]="pendingAccept ? 'Accept ' + pendingAccept.pilotName + '’s bid of $' + pendingAccept.amount + '? All other bids will be rejected and the mission will be awarded.' : ''"
+  confirmText="Accept bid"
+  cancelText="Cancel"
+  [danger]="false"
+  (confirm)="confirmAccept()"
+  (cancelled)="pendingAccept = null"
+/>
+
+<app-confirm-dialog
+  [open]="pendingComplete"
+  title="Mark mission finished?"
+  [message]="mission ? 'Confirm that “' + mission.name + '” has been completed. This moves it to Completed.' : ''"
+  confirmText="Yes, it's finished"
+  cancelText="Not yet"
+  [danger]="false"
+  (confirm)="confirmComplete()"
+  (cancelled)="pendingComplete = false"
+/>
+
+<app-confirm-dialog
+  [open]="pendingStart"
+  title="Start this mission?"
+  [message]="mission ? 'Mark “' + mission.name + '” as underway. This moves it to In Progress.' : ''"
+  confirmText="Start mission"
+  cancelText="Not yet"
+  [danger]="false"
+  (confirm)="confirmStart()"
+  (cancelled)="pendingStart = false"
+/>
+
+<app-confirm-dialog
+  [open]="pendingCancel"
+  title="Cancel this mission?"
+  [message]="mission ? '“' + mission.name + '” will be cancelled and any outstanding bids rejected. This cannot be undone.' : ''"
+  confirmText="Cancel mission"
+  cancelText="Keep it"
+  [danger]="true"
+  (confirm)="confirmCancel()"
+  (cancelled)="pendingCancel = false"
+/>

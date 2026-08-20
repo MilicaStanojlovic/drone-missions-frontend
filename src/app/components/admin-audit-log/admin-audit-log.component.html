@@ -1,0 +1,86 @@
+<section class="page">
+  <header class="page__head">
+    <div>
+      <div class="page__eyebrow">PLATFORM ADMIN</div>
+      <h1 class="page__title">Audit Log</h1>
+      <p class="page__sub">Every designer, pilot, and admin action on the platform, newest first.</p>
+    </div>
+  </header>
+
+  <div class="toolbar">
+    <div class="seg">
+      @for (s of segments; track s.value) {
+        <button
+          type="button"
+          class="seg__btn"
+          [class.seg__btn--active]="filterForm.controls.role.value === s.value"
+          (click)="setRole(s.value)"
+        >{{ s.label }}</button>
+      }
+    </div>
+    <div class="toolbar__right">
+      <select class="toolbar__select" [formControl]="filterForm.controls.action">
+        <option value="">All actions</option>
+        @for (a of actionOptions; track a) {
+          <option [value]="a">{{ actionLabels[a] }}</option>
+        }
+      </select>
+      <input
+        class="toolbar__search"
+        type="text"
+        placeholder="Search by user or detail…"
+        [formControl]="filterForm.controls.q"
+      />
+    </div>
+  </div>
+
+  @if (loading) {
+    <p class="page__state">Loading activity…</p>
+  } @else if (error) {
+    <p class="page__state page__state--error">Couldn't load the audit log. Please try again.</p>
+  } @else {
+    <div class="feed">
+      @if (entries.length === 0) {
+        <div class="feed__empty">
+          {{ hasActiveFilters ? 'No actions match your filters.' : 'No actions recorded yet.' }}
+        </div>
+      } @else {
+        @for (a of entries; track a.id) {
+          <div class="row">
+            <div class="row__dot" [style.background]="roleColors[a.actorRole]"></div>
+            <div class="row__body">
+              <div class="row__line">
+                <span class="row__actor">{{ a.actorUsername }}</span>
+                <span [class]="'pill pill--' + a.actorRole.toLowerCase()">{{ roleLabels[a.actorRole] }}</span>
+                <span class="row__action">{{ sentences[a.action] }}</span>
+              </div>
+              <div class="row__meta" [title]="a.createdAt | date: 'medium'">
+                @if (a.details) {{{ a.details }} · }{{ daysAgo(a.createdAt) }}
+              </div>
+            </div>
+          </div>
+        }
+      }
+    </div>
+
+    @if (entries.length > 0) {
+      <div class="pager">
+        <button
+          type="button"
+          class="pager__btn"
+          [disabled]="pageIndex === 0"
+          (click)="goTo(pageIndex - 1)"
+        >‹ Prev</button>
+        <span class="pager__info">
+          Page {{ pageIndex + 1 }} of {{ lastPageIndex + 1 }} · {{ totalElements }} entries
+        </span>
+        <button
+          type="button"
+          class="pager__btn"
+          [disabled]="pageIndex >= lastPageIndex"
+          (click)="goTo(pageIndex + 1)"
+        >Next ›</button>
+      </div>
+    }
+  }
+</section>

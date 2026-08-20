@@ -1,0 +1,133 @@
+<section class="page">
+  @if (mine) {
+    <!-- ===== Designer dashboard ===== -->
+    <header class="page__head">
+      <div>
+        <div class="page__eyebrow page__eyebrow--designer">MISSION DESIGNER</div>
+        <h1 class="page__title">My Missions</h1>
+      </div>
+      @if (auth.isDesigner) {
+        <a routerLink="/missions/new" class="page__cta">
+          <span class="page__cta-plus">+</span> New Mission
+        </a>
+      }
+    </header>
+
+    @if (!loading && !error && missions.length) {
+      <div class="stats">
+        @for (s of stats; track s.label) {
+          <div class="stat">
+            <div class="stat__value" [style.color]="s.color">{{ s.value }}</div>
+            <div class="stat__label">{{ s.label }}</div>
+          </div>
+        }
+      </div>
+    }
+  } @else {
+    <!-- ===== Pilot feed / marketplace ===== -->
+    <header class="page__head page__head--feed">
+      <div>
+        <div class="page__eyebrow" [class.page__eyebrow--pilot]="auth.isPilot">
+          {{ auth.isPilot ? 'PILOT' : 'MARKETPLACE' }}
+        </div>
+        <h1 class="page__title">Browse missions</h1>
+      </div>
+    </header>
+
+    <div class="feed-controls">
+      <form class="filters" [formGroup]="filterForm">
+        <div class="search">
+          <span class="search__icon" aria-hidden="true">⚲</span>
+          <input
+            class="search__input"
+            type="text"
+            formControlName="keyword"
+            placeholder="Search name or description…"
+          />
+        </div>
+        <input
+          class="filters__input"
+          type="text"
+          formControlName="location"
+          placeholder="Location…"
+          aria-label="Filter by location"
+        />
+        <input
+          class="filters__input filters__date"
+          type="date"
+          formControlName="date"
+          aria-label="Flyable on date"
+        />
+        @if (hasActiveFilters) {
+          <button type="button" class="filters__clear" (click)="clearFilters()">Clear</button>
+        }
+      </form>
+    </div>
+  }
+
+  <!-- ===== Body ===== -->
+  @if (loading) {
+    <p class="page__state">Loading missions…</p>
+  } @else if (error) {
+    <p class="page__state page__state--error">Couldn't load missions. Please try again.</p>
+  } @else if (visibleMissions.length === 0) {
+    <div class="empty">
+      <div class="empty__title">
+        @if (mine) { No missions yet }
+        @else if (hasActiveFilters) { No missions match your filters }
+        @else { No open missions }
+      </div>
+      <div class="empty__sub">
+        @if (mine) { Create your first mission to start collecting bids. }
+        @else if (hasActiveFilters) { Try adjusting or clearing your filters. }
+        @else { Check back soon for published missions. }
+      </div>
+    </div>
+  } @else {
+    <div class="cards">
+      @for (m of visibleMissions; track m.id) {
+        <a class="card" [routerLink]="['/missions', m.id]" [queryParams]="filterParams()">
+          <div class="card__thumb">
+            <app-mission-map class="card__map" [interactive]="false" [waypoints]="m.waypoints ?? []" [geofence]="m.geofence ?? null" />
+            <span
+              class="badge"
+              [style.color]="statusColors[m.status]"
+              [style.background]="statusColors[m.status] + '1a'"
+              [style.border-color]="statusColors[m.status] + '55'"
+            >
+              <span class="badge__dot" [style.background]="statusColors[m.status]"></span>
+              {{ statusLabels[m.status] }}
+            </span>
+          </div>
+          <div class="card__body">
+            <div class="card__title">{{ m.name }}</div>
+            @if (m.location) {
+              <div class="card__location">{{ m.location }}</div>
+            }
+            <div class="card__meta">
+              <div class="card__meta-item">
+                <div class="card__meta-label">Window</div>
+                <div class="card__meta-value">{{ formatWindow(m) }}</div>
+              </div>
+              <div class="card__meta-item">
+                <div class="card__meta-label">Path</div>
+                <div class="card__meta-value">{{ pathFor(m) }}</div>
+              </div>
+            </div>
+            <div class="card__foot">
+              @if (m.designerName) {
+                <span class="card__by">by {{ m.designerName }}</span>
+                <app-rating-stars
+                  [average]="m.designerRating ?? 0"
+                  [count]="m.designerRatingCount ?? 0"
+                  [showEmpty]="false"
+                />
+              }
+              <span class="card__created">Created {{ m.createdAt | date: 'mediumDate' }}</span>
+            </div>
+          </div>
+        </a>
+      }
+    </div>
+  }
+</section>

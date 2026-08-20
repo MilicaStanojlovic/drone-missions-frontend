@@ -1,0 +1,142 @@
+.page {
+  max-width: 520px;
+  margin: 0 auto;
+  padding: 32px 24px 72px;
+  animation: fadeup 0.25s ease;
+}
+
+@keyframes fadeup {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+.page__head {
+  margin-bottom: 22px;
+}
+
+.page__eyebrow {
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  color: #6d5ef0;
+  margin-bottom: 8px;
+}
+
+.page__title {
+  font-family: 'Space Grotesk', system-ui, sans-serif;
+  font-size: 30px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: #141e28;
+  margin: 0;
+}
+
+.page__sub {
+  font-size: 13.5px;
+  color: #5c6b7a;
+  margin: 8px 0 0;
+}
+
+.panel {
+  background: #ffffff;
+  border: 1px solid #e8edf2;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 1px 2px rgba(20, 35, 55, 0.04);
+}
+
+.panel__error {
+  background: #fdf6f5;
+  border: 1px solid #f0d5d3;
+  color: #c0574d;
+  font-size: 13px;
+  border-radius: 9px;
+  padding: 10px 12px;
+  margin-bottom: 16px;
+}
+
+.field {
+  margin-bottom: 16px;
+}
+
+.field__label {
+  display: block;
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: 10.5px;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: #5c6b7a;
+  margin-bottom: 6px;
+}
+
+.field__input {
+  width: 100%;
+  background: #ffffff;
+  border: 1px solid #dbe2ea;
+  border-radius: 9px;
+  color: #1b2732;
+  font-family: inherit;
+  font-size: 13.5px;
+  padding: 10px 12px;
+  outline: none;
+}
+
+.field__input:focus {
+  border-color: #6d5ef0;
+}
+
+.field__input--invalid {
+  border-color: #e04a3f;
+}
+
+.field__error {
+  color: #c0574d;
+  font-size: 12px;
+  margin: 5px 0 0;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.actions__cancel {
+  color: #5c6b7a;
+  font-size: 13px;
+  font-weight: 500;
+  text-decoration: none;
+  padding: 10px 14px;
+  border-radius: 7px;
+}
+
+.actions__cancel:hover {
+  background: #f0f3f7;
+  color: #1b2732;
+}
+
+.actions__submit {
+  background: #2f6bff;
+  border: none;
+  color: #ffffff;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 11px 18px;
+  border-radius: 9px;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(47, 107, 255, 0.28);
+}
+
+.actions__submit:hover:enabled {
+  background: #1e5ae6;
+}
+
+.actions__submit:disabled {
+  opacity: 0.6;
+  cursor: default;
+}

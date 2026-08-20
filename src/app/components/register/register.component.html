@@ -1,0 +1,81 @@
+<div class="auth">
+  <div class="auth__inner">
+    <a class="auth__brand" routerLink="/">
+      <span class="auth__logo"></span>
+      <span class="auth__wordmark">DRONEMISSIONS</span>
+    </a>
+
+    <div class="auth__card">
+      <div class="auth__eyebrow">REGISTER</div>
+      <h1 class="auth__title">Create your account</h1>
+      <p class="auth__sub">Join the marketplace for drone flight missions.</p>
+
+      <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
+        @if (submitError) {
+          <div class="auth__error" role="alert">{{ submitError }}</div>
+        }
+
+        <div class="field">
+          <label class="field__label" for="username">Username</label>
+          <input id="username" type="text" formControlName="username" autocomplete="username"
+                 placeholder="jane.pilot" class="field__input"
+                 [class.field__input--invalid]="form.controls.username.touched && form.controls.username.invalid">
+          @if (form.controls.username.touched && form.controls.username.hasError('required')) {
+            <p class="field__error">Username is required.</p>
+          }
+        </div>
+
+        <div class="field">
+          <label class="field__label" for="email">Email</label>
+          <input id="email" type="email" formControlName="email" autocomplete="email"
+                 placeholder="you@example.com" class="field__input"
+                 [class.field__input--invalid]="form.controls.email.touched && form.controls.email.invalid">
+          @if (form.controls.email.touched && form.controls.email.hasError('required')) {
+            <p class="field__error">Email is required.</p>
+          } @else if (form.controls.email.touched && form.controls.email.hasError('email')) {
+            <p class="field__error">Enter a valid email address.</p>
+          }
+        </div>
+
+        <div class="field">
+          <label class="field__label" for="password">Password</label>
+          <input id="password" type="password" formControlName="password" autocomplete="new-password"
+                 placeholder="At least 8 characters" class="field__input"
+                 [class.field__input--invalid]="form.controls.password.touched && form.controls.password.invalid">
+          @if (form.controls.password.touched && form.controls.password.hasError('required')) {
+            <p class="field__error">Password is required.</p>
+          } @else if (form.controls.password.touched && form.controls.password.hasError('minlength')) {
+            <p class="field__error">Password must be at least 8 characters.</p>
+          }
+        </div>
+
+        <div class="field">
+          <span class="field__label">I want to join as</span>
+          <div class="roles" role="radiogroup" aria-label="Account role">
+            <label class="role" [class.role--active]="form.controls.role.value === 'DESIGNER'">
+              <input type="radio" formControlName="role" value="DESIGNER" class="role__radio">
+              <span class="role__name">Designer</span>
+              <span class="role__desc">List and own missions, choose who flies them.</span>
+            </label>
+            <label class="role" [class.role--active]="form.controls.role.value === 'PILOT'">
+              <input type="radio" formControlName="role" value="PILOT" class="role__radio">
+              <span class="role__name">Pilot</span>
+              <span class="role__desc">Find available work, bid on it, and fly it.</span>
+            </label>
+          </div>
+          @if (form.controls.role.touched && form.controls.role.hasError('required')) {
+            <p class="field__error">Choose how you want to join.</p>
+          }
+        </div>
+
+        <button type="submit" class="auth__submit" [disabled]="submitting">
+          {{ submitting ? 'Creating account…' : 'Create account' }}
+        </button>
+      </form>
+
+      <p class="auth__foot">
+        Already have an account? <a routerLink="/login">Sign in</a>
+      </p>
+    </div>
+  </div>
+</div>

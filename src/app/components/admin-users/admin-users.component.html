@@ -1,0 +1,121 @@
+<section class="page">
+  <header class="page__head">
+    <div>
+      <div class="page__eyebrow">PLATFORM ADMIN</div>
+      <h1 class="page__title">Users</h1>
+    </div>
+    <a routerLink="/admin/users/new" class="page__cta"><span class="page__cta-plus">+</span> New Admin</a>
+  </header>
+
+  <div class="toolbar">
+    <div class="seg">
+      @for (s of segments; track s.value) {
+        <button
+          type="button"
+          class="seg__btn"
+          [class.seg__btn--active]="roleControl.value === s.value"
+          (click)="setRole(s.value)"
+        >{{ s.label }}</button>
+      }
+    </div>
+  </div>
+
+  @if (loading) {
+    <p class="page__state">Loading users…</p>
+  } @else if (error) {
+    <p class="page__state page__state--error">Couldn't load users. Please try again.</p>
+  } @else if (users.length === 0) {
+    <div class="empty">
+      <div class="empty__title">{{ roleControl.value ? 'No users with this role.' : 'No accounts yet' }}</div>
+      <div class="empty__sub">{{ roleControl.value ? 'Try another role filter.' : 'Registered users will appear here.' }}</div>
+    </div>
+  } @else {
+    <div class="table">
+      <div class="table__head">
+        <span>User</span><span>Role</span><span>Status</span><span>Joined</span><span class="table__head-action">Action</span>
+      </div>
+      @for (u of users; track u.id) {
+        <div class="table__row">
+          <div class="cell-main">
+            <div class="cell-main__title" [title]="u.username">{{ u.username }}</div>
+            <div class="cell-main__meta" [title]="u.email">{{ u.email }}</div>
+          </div>
+          <div>
+            <span
+              class="chip"
+              [style.color]="roleColors[u.role]"
+              [style.background]="roleColors[u.role] + '1a'"
+              [style.border-color]="roleColors[u.role] + '55'"
+            >
+              <span class="chip__dot" [style.background]="roleColors[u.role]"></span>
+              {{ roleLabels[u.role] }}
+            </span>
+          </div>
+          <div>
+            <span
+              class="chip"
+              [style.color]="u.suspended ? '#e04a3f' : '#12a06a'"
+              [style.background]="(u.suspended ? '#e04a3f' : '#12a06a') + '1a'"
+              [style.border-color]="(u.suspended ? '#e04a3f' : '#12a06a') + '55'"
+            >
+              <span class="chip__dot" [style.background]="u.suspended ? '#e04a3f' : '#12a06a'"></span>
+              {{ u.suspended ? 'Suspended' : 'Active' }}
+            </span>
+          </div>
+          <div class="cell-joined">{{ u.createdAt | date: 'mediumDate' }}</div>
+          <div class="cell-action">
+            @if (u.role === 'ADMIN') {
+              <span class="cell-action__none">—</span>
+            } @else if (u.suspended) {
+              <button
+                type="button"
+                class="mod-btn mod-btn--ok"
+                [disabled]="acting === u.id"
+                (click)="reactivate(u)"
+              >Reactivate</button>
+            } @else {
+              <button
+                type="button"
+                class="mod-btn mod-btn--danger"
+                [disabled]="acting === u.id"
+                (click)="askSuspend(u)"
+              >Suspend</button>
+            }
+          </div>
+        </div>
+      }
+    </div>
+    <div class="pager">
+      <button
+        type="button"
+        class="pager__btn"
+        [disabled]="pageIndex === 0"
+        (click)="goTo(pageIndex - 1)"
+      >‹ Prev</button>
+      <span class="pager__info">
+        Page {{ pageIndex + 1 }} of {{ lastPageIndex + 1 }} · {{ totalElements }} users
+      </span>
+      <button
+        type="button"
+        class="pager__btn"
+        [disabled]="pageIndex >= lastPageIndex"
+        (click)="goTo(pageIndex + 1)"
+      >Next ›</button>
+    </div>
+    <div class="table__note">
+      Suspending a designer blocks new missions and freezes bidding on their existing ones.
+      Suspending a pilot blocks bidding, awards, and execution of jobs already awarded to them.
+    </div>
+  }
+</section>
+
+<app-confirm-dialog
+  [open]="pending !== null"
+  [title]="'Suspend ' + (pending?.username || '') + '?'"
+  [message]="pendingBody"
+  [confirmText]="pendingConfirmText"
+  cancelText="No, keep it"
+  [danger]="true"
+  (confirm)="confirmSuspend()"
+  (cancelled)="pending = null"
+/>

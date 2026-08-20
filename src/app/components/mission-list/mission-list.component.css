@@ -1,0 +1,333 @@
+.page {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 32px 24px 72px;
+  font-family: 'Space Grotesk', system-ui, sans-serif;
+  color: #1b2732;
+  animation: page-in 0.25s ease;
+}
+
+@keyframes page-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
+
+.page__head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+  margin-bottom: 26px;
+}
+
+.page__eyebrow {
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  color: #93a1b0;
+  margin-bottom: 8px;
+}
+
+.page__eyebrow--designer { color: #2f6bff; }
+.page__eyebrow--pilot { color: #12a06a; }
+
+.page__title {
+  font-size: 30px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  margin: 0;
+  color: #141e28;
+}
+
+.page__cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  background: #2f6bff;
+  color: #fff;
+  border: none;
+  border-radius: 9px;
+  padding: 11px 18px;
+  font-weight: 600;
+  font-size: 14px;
+  text-decoration: none;
+  box-shadow: 0 4px 16px rgba(47, 107, 255, 0.28);
+  transition: background 0.15s ease;
+}
+
+.page__cta:hover { background: #1e5ae6; }
+.page__cta-plus { font-size: 17px; line-height: 1; }
+
+/* Stat tiles */
+.stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 30px;
+}
+
+.stat {
+  background: #ffffff;
+  border: 1px solid #e8edf2;
+  border-radius: 12px;
+  padding: 16px 18px;
+  box-shadow: 0 1px 2px rgba(20, 35, 55, 0.04);
+}
+
+.stat__value {
+  font-size: 28px;
+  font-weight: 700;
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  line-height: 1;
+}
+
+.stat__label {
+  font-size: 11px;
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #93a1b0;
+  margin-top: 8px;
+}
+
+/* Feed controls */
+.feed-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 22px;
+}
+
+.search {
+  position: relative;
+}
+
+.search__icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #a2afbc;
+  font-size: 13px;
+}
+
+.search__input {
+  width: 280px;
+  max-width: 60vw;
+  background: #ffffff;
+  border: 1px solid #dbe2ea;
+  border-radius: 9px;
+  color: #1b2732;
+  font: inherit;
+  font-size: 13.5px;
+  padding: 10px 12px 10px 34px;
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+
+.search__input:focus { border-color: #12a06a; }
+
+/* Feed filter bar */
+.filters {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.filters .search__input {
+  width: 220px;
+}
+
+.filters__input {
+  background: #ffffff;
+  border: 1px solid #dbe2ea;
+  border-radius: 9px;
+  color: #1b2732;
+  font: inherit;
+  font-size: 13.5px;
+  padding: 10px 12px;
+  outline: none;
+}
+
+.filters__input:focus { border-color: #12a06a; }
+
+.filters__clear {
+  border: 1px solid #dbe2ea;
+  background: #f0f3f7;
+  border-radius: 9px;
+  color: #4a5a6a;
+  font: inherit;
+  font-size: 13px;
+  padding: 9px 14px;
+  cursor: pointer;
+}
+
+.filters__clear:hover { background: #e6ebf1; }
+
+/* Cards */
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 16px;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  background: #ffffff;
+  border: 1px solid #e8edf2;
+  border-radius: 14px;
+  overflow: hidden;
+  text-decoration: none;
+  color: inherit;
+  box-shadow: 0 1px 2px rgba(20, 35, 55, 0.04);
+  transition: border-color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.card:hover {
+  border-color: #2f6bff;
+  transform: translateY(-2px);
+  box-shadow: 0 12px 28px rgba(20, 35, 55, 0.1);
+}
+
+.card__thumb {
+  position: relative;
+  aspect-ratio: 1000 / 640;
+  background: #eef1ec;
+  border-bottom: 1px solid #e8edf2;
+}
+
+.card__map {
+  position: absolute;
+  inset: 0;
+}
+
+.badge {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 4px 10px;
+  border-radius: 20px;
+  border: 1px solid transparent;
+}
+
+.badge__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+
+.card__body {
+  padding: 15px 16px 16px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.card__title {
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.3;
+  margin-bottom: 5px;
+  color: #1b2732;
+}
+
+.card__location {
+  font-size: 12px;
+  color: #6b7c8d;
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  margin-bottom: 12px;
+}
+
+.card__meta {
+  display: flex;
+  gap: 16px;
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  margin-bottom: 14px;
+}
+
+.card__meta-label {
+  font-size: 9.5px;
+  letter-spacing: 0.08em;
+  color: #a2afbc;
+  text-transform: uppercase;
+}
+
+.card__meta-value {
+  font-size: 12.5px;
+  color: #43525f;
+  margin-top: 3px;
+}
+
+.card__foot {
+  margin-top: auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 12px;
+  border-top: 1px solid #eef2f6;
+  font-size: 12px;
+  color: #93a1b0;
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+}
+
+/* Empty + loading states */
+.empty {
+  text-align: center;
+  padding: 70px 20px;
+  border: 1px dashed #cdd6df;
+  border-radius: 14px;
+  background: #fff;
+}
+
+.empty__title {
+  font-size: 16px;
+  color: #5c6b7a;
+  margin-bottom: 6px;
+}
+
+.empty__sub {
+  font-size: 13.5px;
+  color: #93a1b0;
+}
+
+.page__state {
+  color: #6b7c8d;
+  padding: 40px 0;
+}
+
+.page__state--error { color: #c0574d; }
+
+@media (max-width: 720px) {
+  .stats { grid-template-columns: repeat(2, 1fr); }
+}
+
+/* The foot now carries the designer and their rating, so it wraps rather than
+   forcing "Created …" off the card on narrow widths. */
+.card__foot {
+  flex-wrap: wrap;
+  gap: 6px 10px;
+}
+
+.card__by {
+  font-family: 'Space Grotesk', system-ui, sans-serif;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #3c4a58;
+}
+
+.card__created {
+  margin-left: auto;
+}
