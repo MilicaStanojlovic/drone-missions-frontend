@@ -1,9 +1,29 @@
 # yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+#
+# CodeRabbit is switched off for this repository. Everything below is
+# deliberately disabled — no automatic reviews, no status posts, no summaries,
+# and no replies to comments.
+#
+# DO NOT DELETE THIS FILE. With no config present CodeRabbit falls back to its
+# defaults, and `reviews.auto_review.enabled` defaults to true — removing the
+# file would silently turn reviews back on.
 reviews:
   profile: chill
+  high_level_summary: false
+  changed_files_summary: false
+  sequence_diagrams: false
+  estimate_code_review_effort: false
+  review_status: false
+  poem: false
   auto_review:
-    # Automatic review on every PR is off. Flip back to true to re-enable it;
-    # an on-demand review can still be requested with "@coderabbitai review".
     enabled: false
+    auto_incremental_review: false
+    drafts: false
+    # Kept only so the original scope survives if reviews are ever re-enabled.
     base_branches:
       - "develop"
+chat:
+  auto_reply: false
+  art: false
+  # The repo is headed for public visibility; don't let strangers drive the bot.
+  allow_non_org_members: false
