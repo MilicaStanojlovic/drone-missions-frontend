@@ -43,3 +43,7 @@ Thumbs.db
 
 ### multiagent-dev pipeline scratch state ###
 plans/
+
+# Local-only docs media (screenshots are committed, these are not)
+docs/assets/*.mp4
+docs/assets/*.pdf
