@@ -2,6 +2,8 @@
 reviews:
   profile: chill
   auto_review:
-    enabled: true
+    # Automatic review on every PR is off. Flip back to true to re-enable it;
+    # an on-demand review can still be requested with "@coderabbitai review".
+    enabled: false
     base_branches:
       - "develop"
